@@ -1024,15 +1024,35 @@
 
     async function deleteRecord(id) {
       if (!confirm('Delete this record?')) return;
+
       try {
+        const numericId = Number(id);
+
+        if (!numericId) {
+          showToast('Invalid record id');
+          return;
+        }
+
+        const { data: existingRow, error: fetchError } = await supabaseClient
+          .from(TABLE_NAME)
+          .select('id')
+          .eq('id', numericId)
+          .single();
+
+        if (fetchError || !existingRow) {
+          console.error('Fetch before delete error:', fetchError);
+          showToast('Record not found. Please refresh once.');
+          return;
+        }
+
         const { data, error } = await supabaseClient
           .from(TABLE_NAME)
           .delete()
-          .eq('id', Number(id))
+          .eq('id', numericId)
           .select();
 
         if (error) {
-          console.error(error);
+          console.error('Delete error:', error);
           showToast(error.message || 'Delete failed');
           return;
         }
@@ -1042,11 +1062,11 @@
           return;
         }
 
-        showToast('Record deleted');
         closeModal();
         await loadRecordsFromSupabase();
+        showToast('Record deleted');
       } catch (err) {
-        console.error(err);
+        console.error('Delete exception:', err);
         showToast('Delete failed');
       }
     }
