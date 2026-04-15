@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SSP & AMC Contract Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg-1: #dbeafe;
+      --bg-2: #ede9fe;
+      --bg-3: #ccfbf1;
+      --text: #0f172a;
+      --muted: #5b6b82;
+      --line: rgba(255,255,255,0.45);
+      --panel: rgba(255,255,255,0.22);
+      --panel-strong: rgba(255,255,255,0.34);
+      --panel-soft: rgba(255,255,255,0.18);
+      --shadow: 0 20px 60px rgba(31, 41, 55, 0.18);
+      --shadow-soft: 0 10px 30px rgba(31, 41, 55, 0.12);
+      --accent-a: #2563eb;
+      --accent-b: #7c3aed;
+      --accent-c: #0f766e;
+      --soft-block: rgba(255,255,255,0.18);
+      --soft-border: rgba(255,255,255,0.35);
+      --soft-text: #1e293b;
+    }
+
+    body.dark-mode {
+      --bg-1: #0f172a;
+      --bg-2: #1e1b4b;
+      --bg-3: #083344;
+      --text: #e8eefc;
+      --muted: #94a3b8;
+      --line: rgba(255,255,255,0.12);
+      --panel: rgba(15,23,42,0.42);
+      --panel-strong: rgba(15,23,42,0.56);
+      --panel-soft: rgba(15,23,42,0.32);
+      --shadow: 0 24px 70px rgba(2,6,23,0.42);
+      --shadow-soft: 0 14px 34px rgba(2,6,23,0.26);
+      --soft-block: rgba(255,255,255,0.05);
+      --soft-border: rgba(255,255,255,0.10);
+      --soft-text: #dbe7ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(37,99,235,0.45), transparent 24%),
+        radial-gradient(circle at 90% 8%, rgba(124,58,237,0.35), transparent 20%),
+        radial-gradient(circle at 50% 100%, rgba(15,118,110,0.28), transparent 26%),
+        linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 52%, var(--bg-3) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .25s ease, color .25s ease;
+    }
+
+    .display-font { font-family: 'Space Grotesk', sans-serif; }
+
+    .panel,
+    .panel-soft {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-soft {
+      background: linear-gradient(135deg, var(--panel-strong), var(--panel-soft));
+      box-shadow: var(--shadow);
+    }
+
+    .panel::before,
+    .panel-soft::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.04));
+      pointer-events: none;
+    }
+
+    .input-ui {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.18);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font: inherit;
+      outline: none;
+      transition: .2s ease;
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+
+    body.dark-mode .input-ui { background: rgba(15,23,42,0.26); }
+    .input-ui::placeholder { color: var(--muted); }
+    .input-ui:focus {
+      border-color: rgba(255,255,255,0.55);
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.10);
+    }
+
+    .muted { color: var(--muted); }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.14);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .soft-block {
+      background: var(--soft-block);
+      border-color: var(--soft-border) !important;
+      color: var(--soft-text);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+
+    .fade-up { animation: fadeUp .25s ease-out; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grid-auto {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-auto { grid-template-columns: 1fr; }
+    }
+
+    .nav-btn.active {
+      background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 12px 28px rgba(37,99,235,0.28);
+    }
+
+    .action-gradient {
+      background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+      box-shadow: 0 16px 34px rgba(37,99,235,0.28);
+    }
+
+    .fab-gradient {
+      background: linear-gradient(135deg, var(--accent-a), var(--accent-b), var(--accent-c));
+      box-shadow: 0 18px 38px rgba(37,99,235,0.30);
+    }
+
+    .mobile-safe-bottom { padding-bottom: 110px; }
+    @media (max-width: 768px) {
+      .mobile-safe-bottom { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+      .mobile-nav { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+    }
+
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 999px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body>
+  <section id="authScreen" class="min-h-screen px-4 py-8 flex items-center justify-center">
+    <div class="panel-soft w-full max-w-md rounded-[32px] p-6 md:p-8">
+      <div class="mb-6">
+        <div class="mb-3 inline-flex items-center gap-2 rounded-full soft-block px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+          <span>●</span> Secure Access
+        </div>
+        <h1 class="display-font text-3xl font-bold tracking-tight">SSP & AMC Tracker Login</h1>
+        <p class="muted mt-3 text-sm">Sign in with an approved account to view and manage contracts.</p>
+      </div>
+
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="muted mb-2 block text-sm font-semibold">Email</label>
+          <input id="loginEmail" type="email" required class="input-ui" placeholder="name@example.com">
+        </div>
+        <div>
+          <label class="muted mb-2 block text-sm font-semibold">Password</label>
+          <input id="loginPassword" type="password" required class="input-ui" placeholder="Enter password">
+        </div>
+        <button id="loginButton" type="submit" class="w-full rounded-2xl action-gradient px-5 py-3 font-bold text-white">Sign In</button>
+      </form>
+
+      <div class="mt-4 text-center">
+        <button id="authThemeToggle" class="rounded-2xl border border-white/30 bg-white/20 px-4 py-3 text-sm font-bold text-[var(--text)] backdrop-blur-xl">Dark</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="appShell" class="mobile-safe-bottom hidden">
+    <main class="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-4 md:px-6 md:pb-28 md:pt-6 lg:px-8">
+      <section class="mb-6 grid gap-4 xl:grid-cols-[1.15fr,0.85fr]">
+        <div class="panel-soft rounded-[28px] p-5 md:p-8">
+          <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="mb-3 inline-flex items-center gap-2 rounded-full soft-block px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                <span>●</span> Supabase Workspace
+              </div>
+              <h1 class="display-font text-3xl font-bold tracking-tight md:text-5xl">SSP & AMC Contract Tracker</h1>
+              <p class="muted mt-3 max-w-2xl text-sm md:text-base">Track contracts, service schedules, contacts, risk, invoice status, and renewal planning in one workspace.</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button id="themeToggle" class="rounded-2xl border border-white/30 bg-white/20 px-4 py-3 text-sm font-bold text-[var(--text)] backdrop-blur-xl">Dark</button>
+              <button id="logoutButton" class="rounded-2xl border border-white/30 bg-white/20 px-4 py-3 text-sm font-bold text-[var(--text)] backdrop-blur-xl">Sign Out</button>
+              <button onclick="openModal()" class="rounded-2xl action-gradient px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(59,130,246,0.28)]">Add Contract</button>
+            </div>
+          </div>
+
+          <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
+            <span class="chip" style="background:#dcfce7;color:#166534;border-color:#bbf7d0">Signed In</span>
+            <span id="userEmailDisplay" class="muted"></span>
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <button id="tabDashboard" onclick="switchPage('dashboard')" class="nav-btn active rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold">Dashboard</button>
+            <button id="tabList" onclick="switchPage('list')" class="nav-btn rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold">Contract List</button>
+          </div>
+        </div>
+
+        <div class="panel rounded-[28px] p-5 md:p-8">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Actions</div>
+              <h2 class="display-font mt-1 text-2xl font-bold">Control Center</h2>
+            </div>
+            <div class="rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--text)] ring-1 ring-white/30 soft-block">Online</div>
+          </div>
+
+          <div class="space-y-3">
+            <button onclick="document.getElementById('importFile').click()" class="input-ui text-left">
+              <div class="font-semibold">Import JSON</div>
+              <div class="muted mt-1 text-sm">Replace all online records from JSON</div>
+            </button>
+            <button onclick="exportData()" class="input-ui text-left">
+              <div class="font-semibold">Export JSON</div>
+              <div class="muted mt-1 text-sm">Backup current tracker data</div>
+            </button>
+            <button onclick="exportExcel()" class="input-ui text-left">
+              <div class="font-semibold">Download Excel</div>
+              <div class="muted mt-1 text-sm">Export tracker data in .xlsx format</div>
+            </button>
+            <div class="input-ui">
+              <div class="font-semibold">Today</div>
+              <div id="currentDate" class="muted mt-1 text-sm"></div>
+            </div>
+          </div>
+          <input type="file" id="importFile" class="hidden" accept=".json" onchange="handleImport(event)">
+        </div>
+      </section>
+
+      <section id="dashboardPage">
+        <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" id="statsGrid"></div>
+
+        <section class="mb-6 grid gap-4 lg:grid-cols-[0.95fr,1.05fr]">
+          <div class="panel rounded-[28px] p-4 md:p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Overview</div>
+                <h3 class="display-font mt-1 text-xl font-bold">Tracker Health</h3>
+              </div>
+            </div>
+            <div id="overviewCards" class="grid gap-3 sm:grid-cols-2"></div>
+          </div>
+
+          <div class="panel rounded-[28px] p-4 md:p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Renewal Watch</div>
+                <h3 class="display-font mt-1 text-xl font-bold">Upcoming Contracts</h3>
+              </div>
+            </div>
+            <div id="renewalList" class="space-y-3"></div>
+          </div>
+        </section>
+      </section>
+
+      <section id="listPage" class="hidden">
+        <section class="mb-6 grid gap-4 lg:grid-cols-[0.9fr,1.1fr]">
+          <div class="panel rounded-[28px] p-4 md:p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Filters</div>
+                <h3 class="display-font mt-1 text-xl font-bold">Refine View</h3>
+              </div>
+              <button onclick="resetFilters()" class="rounded-xl soft-block px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">Reset</button>
+            </div>
+
+            <div class="space-y-3">
+              <input id="searchInput" type="text" placeholder="Search project, service, contractor, PO, email..." oninput="renderApp()" class="input-ui">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <select id="statusFilter" onchange="renderApp()" class="input-ui">
+                  <option value="All">All Contract Status</option>
+                  <option value="Valid">Valid</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Not Valid">Not Valid</option>
+                  <option value="Expired">Expired</option>
+                </select>
+                <select id="riskFilter" onchange="renderApp()" class="input-ui">
+                  <option value="All">All Risk Levels</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <select id="typeFilter" onchange="renderApp()" class="input-ui">
+                  <option value="All">All Contractor Types</option>
+                  <option value="External">External</option>
+                  <option value="Internal">Internal</option>
+                  <option value="In-House">In-House</option>
+                </select>
+                <select id="sortSelect" onchange="renderApp()" class="input-ui">
+                  <option value="recent">Sort: Recent</option>
+                  <option value="renewal">Sort: Renewal date</option>
+                  <option value="valueHigh">Sort: Value High-Low</option>
+                  <option value="valueLow">Sort: Value Low-High</option>
+                  <option value="service">Sort: Service</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel rounded-[28px] p-4 md:p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Quick Status Filter</div>
+                <h3 class="display-font mt-1 text-xl font-bold">Browse by Contract Status</h3>
+              </div>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-3">
+              <button id="quickAll" onclick="quickStatus('All')" class="soft-block rounded-2xl border px-4 py-4 text-left">
+                <div class="text-sm font-bold">All Records</div>
+                <div class="muted mt-1 text-xs">See everything</div>
+              </button>
+              <button id="quickValid" onclick="quickStatus('Valid')" class="soft-block rounded-2xl border px-4 py-4 text-left">
+                <div class="text-sm font-bold">Valid</div>
+                <div class="muted mt-1 text-xs">Active contracts</div>
+              </button>
+              <button id="quickProgress" onclick="quickStatus('In Progress')" class="soft-block rounded-2xl border px-4 py-4 text-left">
+                <div class="text-sm font-bold">In Progress</div>
+                <div class="muted mt-1 text-xs">Under processing</div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="itemsGrid" class="grid-auto"></section>
+      </section>
+    </main>
+
+    <button onclick="openModal()" class="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-2xl fab-gradient text-white shadow-[0_18px_34px_rgba(59,130,246,0.30)] md:bottom-8 md:right-8">+</button>
+
+    <nav class="mobile-nav panel fixed bottom-0 left-0 right-0 z-50 border-t px-2 py-2 sm:px-4 sm:py-3">
+      <div class="mx-auto grid max-w-7xl grid-cols-4 gap-2 sm:flex sm:items-center sm:justify-between sm:gap-3">
+        <button onclick="switchPage('dashboard')" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">Dashboard</button>
+        <button onclick="switchPage('list')" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">List</button>
+        <button onclick="toggleTheme()" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">Theme</button>
+        <button onclick="openModal()" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">Add</button>
+      </div>
+    </nav>
+  </div>
+
+  <div id="modal" class="fixed inset-0 z-[70] hidden items-end justify-center overflow-y-auto bg-slate-950/45 p-0 md:items-center md:p-4">
+    <div class="panel relative my-auto w-full max-w-6xl rounded-t-[28px] p-4 md:max-h-[92vh] md:rounded-[32px] md:p-6">
+      <div class="sticky top-0 z-10 mb-6 flex items-center justify-between rounded-2xl bg-transparent pb-3 pt-1">
+        <div>
+          <div id="modalLabel" class="muted text-xs font-semibold uppercase tracking-[0.2em]">New entry</div>
+          <h2 id="modalTitle" class="display-font mt-1 text-2xl font-bold">Create contract record</h2>
+        </div>
+        <button onclick="closeModal()" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">Close</button>
+      </div>
+
+      <form id="trackerForm" class="max-h-[78vh] space-y-5 overflow-y-auto pr-1 md:max-h-[74vh] md:pr-2">
+        <input type="hidden" id="editId">
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div><label class="muted mb-2 block text-sm font-semibold">Serial No.</label><input type="number" id="serialNo" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Project Code</label><input id="projectCode" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Project Site</label><input id="projectSite" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Services</label><input required id="services" class="input-ui"></div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div><label class="muted mb-2 block text-sm font-semibold">Frequency</label><input id="frequency" class="input-ui" placeholder="Monthly / Quarterly / etc."></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Contractor Type</label>
+            <select id="contractorType" class="input-ui">
+              <option value="">Select</option>
+              <option value="External">External</option>
+              <option value="Internal">Internal</option>
+              <option value="In-House">In-House</option>
+            </select>
+          </div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Contractors</label><input id="contractors" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Contract Status</label>
+            <select id="contractStatus" class="input-ui">
+              <option value="">Select</option>
+              <option value="Valid">Valid</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Not Valid">Not Valid</option>
+              <option value="Expired">Expired</option>
+            </select>
+          </div>
+        </div>
+
+        <div><label class="muted mb-2 block text-sm font-semibold">Comment</label><input id="comment" class="input-ui"></div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div><label class="muted mb-2 block text-sm font-semibold">Contact Person</label><input id="contactPerson" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Contact Number</label><input id="contactNumber" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Email ID</label><input type="email" id="emailId" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Escalation Contact</label><input id="escalationContact" class="input-ui"></div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div><label class="muted mb-2 block text-sm font-semibold">Contract Start Date</label><input type="date" id="contractStartDate" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Contract End Date</label><input type="date" id="contractEndDate" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Last Service Date</label><input type="date" id="lastServiceDate" class="input-ui"></div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div><label class="muted mb-2 block text-sm font-semibold">Contract Value (AED)</label><input type="number" step="0.01" id="contractValueAed" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Approved Budget (AED)</label><input type="number" step="0.01" id="approvedBudgetAed" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Payment Terms</label><input id="paymentTerms" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Invoice Status</label><input id="invoiceStatus" class="input-ui" placeholder="Under Accounts / Approval / etc."></div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div><label class="muted mb-2 block text-sm font-semibold">SLA / KPI Status</label><input id="slaKpiStatus" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Next Service Due Date</label><input id="nextServiceDueDate" class="input-ui" placeholder="Text or date"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Certification / License Validity</label><input id="certificationValidity" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Risk Level</label>
+            <select id="riskLevel" class="input-ui">
+              <option value="">Select</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div><label class="muted mb-2 block text-sm font-semibold">PO / Agreement Reference</label><input id="poAgreementReference" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Issues / Non-Compliance Remarks</label><textarea id="issuesRemarks" rows="3" class="input-ui min-h-[110px]"></textarea></div>
+        </div>
+
+        <div class="sticky bottom-0 z-10 flex flex-col-reverse gap-3 border-t border-[var(--line)] bg-transparent pt-4 pb-1 sm:flex-row sm:justify-end">
+          <button type="button" onclick="closeModal()" class="rounded-2xl soft-block border px-5 py-3 font-semibold text-[var(--text)]">Cancel</button>
+          <button id="saveRecordButton" type="submit" class="rounded-2xl action-gradient px-5 py-3 font-bold text-white shadow-[0_12px_28px_rgba(59,130,246,0.24)]">Save Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed left-1/2 top-5 z-[90] hidden -translate-x-1/2">
+    <div class="panel rounded-2xl px-4 py-3 text-sm font-semibold" id="toastText"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://irfryahjlvgfmbjmpdje.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_DuMmB81SkD-1fnXZKXnvyA_N_JcKgE8';
+    const TABLE_NAME = 'ssp_amc_contracts';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        storage: {
+          getItem: (key) => sessionStorage.getItem(key),
+          setItem: (key, value) => sessionStorage.setItem(key, value),
+          removeItem: (key) => sessionStorage.removeItem(key)
+        }
+      }
+    });
+
+    let records = [];
+    let currentPage = 'dashboard';
+    let darkMode = JSON.parse(localStorage.getItem('ssp_amc_tracker_dark_mode') || 'false');
+    let currentUser = null;
+
+    function applyTheme() {
+      document.body.classList.toggle('dark-mode', darkMode);
+      const themeText = darkMode ? 'Light' : 'Dark';
+      const btn = document.getElementById('themeToggle');
+      const authBtn = document.getElementById('authThemeToggle');
+      if (btn) btn.textContent = themeText;
+      if (authBtn) authBtn.textContent = themeText;
+      localStorage.setItem('ssp_amc_tracker_dark_mode', JSON.stringify(darkMode));
+    }
+
+    function toggleTheme() {
+      darkMode = !darkMode;
+      applyTheme();
+      renderApp();
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastText').textContent = message;
+      toast.classList.remove('hidden');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.add('hidden'), 2400);
+    }
+
+    function showAuthScreen() {
+      document.getElementById('authScreen').classList.remove('hidden');
+      document.getElementById('appShell').classList.add('hidden');
+      currentUser = null;
+    }
+
+    function showAppScreen(user) {
+      currentUser = user;
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('appShell').classList.remove('hidden');
+      document.getElementById('userEmailDisplay').textContent = user?.email || '';
+      document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { dateStyle: 'medium' });
+    }
+
+    function switchPage(page) {
+      currentPage = page;
+      document.getElementById('dashboardPage').classList.toggle('hidden', page !== 'dashboard');
+      document.getElementById('listPage').classList.toggle('hidden', page !== 'list');
+      document.getElementById('tabDashboard').classList.toggle('active', page === 'dashboard');
+      document.getElementById('tabList').classList.toggle('active', page === 'list');
+    }
+
+    function formatDate(value) {
+      if (!value) return 'NA';
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return String(value);
+      return d.toLocaleDateString('en-GB');
+    }
+
+    function safeNumber(value) {
+      const n = Number(value || 0);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function currencyFormat(value) {
+      const num = safeNumber(value);
+      return num ? num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+    }
+
+    function daysTo(dateValue) {
+      if (!dateValue) return null;
+      const d = new Date(dateValue);
+      if (isNaN(d.getTime())) return null;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      d.setHours(0,0,0,0);
+      return Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+    }
+
+    function statusTone(status) {
+      const value = (status || '').toLowerCase();
+      if (value === 'valid') return 'background:#dcfce7;color:#166534;border-color:#bbf7d0';
+      if (value === 'in progress') return 'background:#fff7ed;color:#c2410c;border-color:#fed7aa';
+      if (value === 'not valid' || value === 'expired') return 'background:#fee2e2;color:#b91c1c;border-color:#fecaca';
+      return 'background:#e0f2fe;color:#0369a1;border-color:#bae6fd';
+    }
+
+    function riskTone(risk) {
+      const value = (risk || '').toLowerCase();
+      if (value === 'high') return 'background:#fee2e2;color:#b91c1c;border-color:#fecaca';
+      if (value === 'medium') return 'background:#fff7ed;color:#c2410c;border-color:#fed7aa';
+      if (value === 'low') return 'background:#dcfce7;color:#166534;border-color:#bbf7d0';
+      return 'background:#e0f2fe;color:#0369a1;border-color:#bae6fd';
+    }
+
+    function contractorTone(type) {
+      const value = (type || '').toLowerCase();
+      if (value === 'internal' || value === 'in-house') return 'background:#ede9fe;color:#6d28d9;border-color:#ddd6fe';
+      return 'background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe';
+    }
+
+    function renderStat(title, value, accentBg, accentText) {
+      return `
+        <div class="panel rounded-[24px] p-5">
+          <div class="mb-4 flex items-center justify-between">
+            <div class="rounded-2xl px-3 py-2 text-sm font-bold" style="background:${accentBg};color:${accentText}">●</div>
+            <span class="muted text-[11px] font-semibold uppercase tracking-[0.18em]">Live</span>
+          </div>
+          <div class="display-font text-3xl font-bold" style="color:${accentText}">${value}</div>
+          <div class="muted mt-1 text-sm">${title}</div>
+        </div>
+      `;
+    }
+
+    function renderDashboard(stats) {
+      document.getElementById('statsGrid').innerHTML = `
+        ${renderStat('Total Contracts', stats.total, '#eff6ff', '#1d4ed8')}
+        ${renderStat('Valid', stats.valid, '#dcfce7', '#166534')}
+        ${renderStat('In Progress', stats.progress, '#fff7ed', '#c2410c')}
+        ${renderStat('High Risk', stats.highRisk, '#fee2e2', '#b91c1c')}
+        ${renderStat('Contract Value', 'AED ' + currencyFormat(stats.value), '#e0f2fe', '#0369a1')}
+      `;
+
+      document.getElementById('overviewCards').innerHTML = `
+        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">External Contracts</div><div class="display-font mt-2 text-2xl font-bold">${stats.external}</div></div>
+        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">Internal / In-House</div><div class="display-font mt-2 text-2xl font-bold">${stats.internal}</div></div>
+        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">Upcoming Renewals (30d)</div><div class="display-font mt-2 text-2xl font-bold">${stats.upcoming}</div></div>
+        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">Under Accounts</div><div class="display-font mt-2 text-2xl font-bold">${stats.accounts}</div></div>
+      `;
+
+      const upcoming = [...records]
+        .map(r => ({ ...r, renewalDiff: daysTo(r.renewalReminderDate || r.contractEndDate) }))
+        .filter(r => r.renewalDiff !== null)
+        .sort((a, b) => a.renewalDiff - b.renewalDiff)
+        .slice(0, 6);
+
+      document.getElementById('renewalList').innerHTML = upcoming.length ? upcoming.map(r => `
+        <div class="soft-block rounded-[20px] border p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="display-font text-lg font-bold">${r.services || 'NA'}</div>
+              <div class="muted mt-1 text-sm">${r.projectSite || ''} ${r.contractors ? '• ' + r.contractors : ''}</div>
+            </div>
+            <span class="chip" style="${statusTone(r.contractStatus)}">${r.contractStatus || 'NA'}</span>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span class="chip" style="${riskTone(r.riskLevel)}">${r.riskLevel || 'No Risk'}</span>
+            <span class="chip" style="background:#f8fafc;color:#334155;border-color:#e2e8f0">Renewal ${formatDate(r.renewalReminderDate || r.contractEndDate)}</span>
+          </div>
+        </div>
+      `).join('') : `<div class="rounded-[20px] bg-slate-50 p-5 text-sm muted">No renewal dates available.</div>`;
+    }
+
+    function renderList(filtered, statusFilter) {
+      const grid = document.getElementById('itemsGrid');
+      if (!filtered.length) {
+        grid.innerHTML = `
+          <div class="panel col-span-full rounded-[28px] p-12 text-center">
+            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-2xl">🔎</div>
+            <div class="display-font text-2xl font-bold">No records found</div>
+            <p class="muted mt-2 text-sm">Try a different search or add a new contract entry.</p>
+          </div>
+        `;
+        updateQuickButtons(statusFilter);
+        return;
+      }
+
+      grid.innerHTML = filtered.map(r => `
+        <article class="panel fade-up rounded-[28px] overflow-hidden">
+          <div class="soft-block border-b px-5 py-4">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="min-w-0">
+                <div class="muted mb-1 text-[11px] font-bold uppercase tracking-[0.18em]">Service</div>
+                <div class="display-font text-xl font-bold break-words">${r.services || 'NA'}</div>
+                <div class="muted mt-1 text-sm">${r.projectSite || 'NA'} ${r.projectCode ? '• ' + r.projectCode : ''}</div>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button onclick="editRecord('${r.id}')" class="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 ring-1 ring-slate-200">Edit</button>
+                <button onclick="deleteRecord('${r.id}')" class="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-rose-700 ring-1 ring-slate-200">Delete</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-5">
+            <div class="mb-4 flex flex-wrap gap-2">
+              <span class="chip" style="${contractorTone(r.contractorType)}">${r.contractorType || 'NA'}</span>
+              <span class="chip" style="${statusTone(r.contractStatus)}">${r.contractStatus || 'NA'}</span>
+              <span class="chip" style="${riskTone(r.riskLevel)}">${r.riskLevel || 'No Risk'}</span>
+            </div>
+
+            <div class="soft-block mb-4 rounded-[22px] border p-4">
+              <div class="muted mb-2 text-[11px] font-bold uppercase tracking-[0.18em]">Contractors & Contact</div>
+              <div class="text-sm leading-6 break-words">${r.contractors || 'NA'}${r.contactPerson ? ' • ' + r.contactPerson : ''}${r.contactNumber ? ' • ' + r.contactNumber : ''}</div>
+              <div class="muted mt-2 text-sm break-all">${r.emailId || ''}</div>
+            </div>
+
+            <div class="grid gap-3 xl:grid-cols-2">
+              <div class="soft-block rounded-[20px] border p-4">
+                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Timeline</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between gap-3"><span class="muted">Start Date</span><span>${formatDate(r.contractStartDate)}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">End Date</span><span>${formatDate(r.contractEndDate)}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">Last Service</span><span>${formatDate(r.lastServiceDate)}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">Renewal Reminder</span><span>${formatDate(r.renewalReminderDate)}</span></div>
+                </div>
+              </div>
+              <div class="soft-block rounded-[20px] border p-4">
+                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Commercials</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between gap-3"><span class="muted">Contract Value</span><span>AED ${currencyFormat(r.contractValueAed)}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">Approved Budget</span><span>AED ${currencyFormat(r.approvedBudgetAed)}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">Invoice Status</span><span class="text-right">${r.invoiceStatus || 'NA'}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">Payment Terms</span><span class="text-right">${r.paymentTerms || 'NA'}</span></div>
+                </div>
+              </div>
+              <div class="soft-block rounded-[20px] border p-4">
+                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Performance</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between gap-3"><span class="muted">SLA / KPI</span><span class="text-right">${r.slaKpiStatus || 'NA'}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">Next Service Due</span><span class="text-right">${r.nextServiceDueDate || 'NA'}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">License Validity</span><span class="text-right">${r.certificationValidity || 'NA'}</span></div>
+                </div>
+              </div>
+              <div class="soft-block rounded-[20px] border p-4">
+                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Reference</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between gap-3"><span class="muted">PO / Agreement</span><span class="text-right break-all">${r.poAgreementReference || 'NA'}</span></div>
+                  <div class="flex justify-between gap-3"><span class="muted">Escalation</span><span class="text-right">${r.escalationContact || 'NA'}</span></div>
+                </div>
+              </div>
+            </div>
+
+            ${r.comment ? `<div class="soft-block mt-4 rounded-[20px] border p-4"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">Comment</div><p class="text-sm">${r.comment}</p></div>` : ''}
+            ${r.issuesRemarks ? `<div class="soft-block mt-4 rounded-[20px] border p-4"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">Issues / Non-Compliance</div><p class="text-sm">${r.issuesRemarks}</p></div>` : ''}
+          </div>
+        </article>
+      `).join('');
+
+      updateQuickButtons(statusFilter);
+    }
+
+    function renderApp() {
+      const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+      const statusFilter = document.getElementById('statusFilter')?.value || 'All';
+      const riskFilter = document.getElementById('riskFilter')?.value || 'All';
+      const typeFilter = document.getElementById('typeFilter')?.value || 'All';
+      const sortBy = document.getElementById('sortSelect')?.value || 'recent';
+
+      let filtered = [...records].filter(r => {
+        const text = [r.projectCode, r.projectSite, r.services, r.contractors, r.contactPerson, r.emailId, r.poAgreementReference, r.invoiceStatus].join(' ').toLowerCase();
+        const matchesSearch = !search || text.includes(search);
+        const matchesStatus = statusFilter === 'All' || r.contractStatus === statusFilter;
+        const matchesRisk = riskFilter === 'All' || r.riskLevel === riskFilter;
+        const matchesType = typeFilter === 'All' || r.contractorType === typeFilter;
+        return matchesSearch && matchesStatus && matchesRisk && matchesType;
+      });
+
+      filtered.sort((a, b) => {
+        if (sortBy === 'renewal') {
+          const aTime = new Date(a.renewalReminderDate || a.contractEndDate || '9999-12-31').getTime();
+          const bTime = new Date(b.renewalReminderDate || b.contractEndDate || '9999-12-31').getTime();
+          return aTime - bTime;
+        }
+        if (sortBy === 'valueHigh') return safeNumber(b.contractValueAed) - safeNumber(a.contractValueAed);
+        if (sortBy === 'valueLow') return safeNumber(a.contractValueAed) - safeNumber(b.contractValueAed);
+        if (sortBy === 'service') return (a.services || '').localeCompare(b.services || '');
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+
+      const stats = {
+        total: records.length,
+        valid: records.filter(r => (r.contractStatus || '').toLowerCase() === 'valid').length,
+        progress: records.filter(r => (r.contractStatus || '').toLowerCase() === 'in progress').length,
+        highRisk: records.filter(r => (r.riskLevel || '').toLowerCase() === 'high').length,
+        value: records.reduce((sum, r) => sum + safeNumber(r.contractValueAed), 0),
+        external: records.filter(r => (r.contractorType || '').toLowerCase() === 'external').length,
+        internal: records.filter(r => ['internal', 'in-house'].includes((r.contractorType || '').toLowerCase())).length,
+        upcoming: records.filter(r => {
+          const diff = daysTo(r.renewalReminderDate || r.contractEndDate);
+          return diff !== null && diff >= 0 && diff <= 30;
+        }).length,
+        accounts: records.filter(r => (r.invoiceStatus || '').toLowerCase().includes('account')).length
+      };
+
+      renderDashboard(stats);
+      renderList(filtered, statusFilter);
+      applyTheme();
+      switchPage(currentPage);
+    }
+
+    function updateQuickButtons(statusFilter) {
+      const base = 'soft-block rounded-2xl border px-4 py-4 text-left';
+      ['quickAll','quickValid','quickProgress'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = base;
+      });
+      if (statusFilter === 'All') document.getElementById('quickAll').className = base + ' ring-2 ring-blue-200 soft-block';
+      if (statusFilter === 'Valid') document.getElementById('quickValid').className = base + ' ring-2 ring-emerald-200 bg-emerald-50';
+      if (statusFilter === 'In Progress') document.getElementById('quickProgress').className = base + ' ring-2 ring-amber-200 bg-amber-50';
+    }
+
+    function quickStatus(status) {
+      const statusEl = document.getElementById('statusFilter');
+      if (statusEl) statusEl.value = status;
+      currentPage = 'list';
+      renderApp();
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('statusFilter').value = 'All';
+      document.getElementById('riskFilter').value = 'All';
+      document.getElementById('typeFilter').value = 'All';
+      document.getElementById('sortSelect').value = 'recent';
+      renderApp();
+    }
+
+    function openModal() {
+      document.getElementById('trackerForm').reset();
+      document.getElementById('editId').value = '';
+      document.getElementById('modalLabel').textContent = 'New entry';
+      document.getElementById('modalTitle').textContent = 'Create contract record';
+      document.getElementById('saveRecordButton').disabled = false;
+      document.getElementById('saveRecordButton').textContent = 'Save Record';
+      document.getElementById('modal').classList.remove('hidden');
+      document.getElementById('modal').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('trackerForm').reset();
+      document.getElementById('editId').value = '';
+      document.getElementById('saveRecordButton').disabled = false;
+      document.getElementById('saveRecordButton').textContent = 'Save Record';
+      document.getElementById('modal').classList.add('hidden');
+      document.getElementById('modal').classList.remove('flex');
+    }
+
+    function editRecord(id) {
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('editId').value = r.id;
+      document.getElementById('serialNo').value = r.serialNo || '';
+      document.getElementById('projectCode').value = r.projectCode || '';
+      document.getElementById('projectSite').value = r.projectSite || '';
+      document.getElementById('services').value = r.services || '';
+      document.getElementById('frequency').value = r.frequency || '';
+      document.getElementById('contractorType').value = r.contractorType || '';
+      document.getElementById('contractors').value = r.contractors || '';
+      document.getElementById('contractStatus').value = r.contractStatus || '';
+      document.getElementById('comment').value = r.comment || '';
+      document.getElementById('contactPerson').value = r.contactPerson || '';
+      document.getElementById('contactNumber').value = r.contactNumber || '';
+      document.getElementById('emailId').value = r.emailId || '';
+      document.getElementById('contractStartDate').value = r.contractStartDate || '';
+      document.getElementById('contractEndDate').value = r.contractEndDate || '';
+      document.getElementById('contractValueAed').value = r.contractValueAed || '';
+      document.getElementById('approvedBudgetAed').value = r.approvedBudgetAed || '';
+      document.getElementById('paymentTerms').value = r.paymentTerms || '';
+      document.getElementById('slaKpiStatus').value = r.slaKpiStatus || '';
+      document.getElementById('lastServiceDate').value = r.lastServiceDate || '';
+      document.getElementById('nextServiceDueDate').value = r.nextServiceDueDate || '';
+      document.getElementById('certificationValidity').value = r.certificationValidity || '';
+      document.getElementById('issuesRemarks').value = r.issuesRemarks || '';
+      document.getElementById('riskLevel').value = r.riskLevel || '';
+      document.getElementById('escalationContact').value = r.escalationContact || '';
+      document.getElementById('poAgreementReference').value = r.poAgreementReference || '';
+      document.getElementById('invoiceStatus').value = r.invoiceStatus || '';
+      document.getElementById('renewalReminderDate').value = r.renewalReminderDate || '';
+      document.getElementById('modalLabel').textContent = 'Edit entry';
+      document.getElementById('modalTitle').textContent = 'Update contract record';
+      document.getElementById('saveRecordButton').disabled = false;
+      document.getElementById('saveRecordButton').textContent = 'Save Record';
+      document.getElementById('modal').classList.remove('hidden');
+      document.getElementById('modal').classList.add('flex');
+    }
+
+    function mapRowToRecord(row) {
+      return {
+        id: String(row.id),
+        serialNo: row.serial_no,
+        projectCode: row.project_code,
+        projectSite: row.project_site,
+        services: row.services,
+        frequency: row.frequency,
+        contractorType: row.contractor_type,
+        contractors: row.contractors,
+        contractStatus: row.contract_status,
+        comment: row.comment,
+        contactPerson: row.contact_person,
+        contactNumber: row.contact_number,
+        emailId: row.email_id,
+        contractStartDate: row.contract_start_date,
+        contractEndDate: row.contract_end_date,
+        contractValueAed: row.contract_value_aed,
+        approvedBudgetAed: row.management_approved_budget_aed,
+        paymentTerms: row.payment_terms,
+        slaKpiStatus: row.sla_kpi_status,
+        lastServiceDate: row.last_service_date,
+        nextServiceDueDate: row.next_service_due_date,
+        certificationValidity: row.certification_license_validity,
+        issuesRemarks: row.issues_non_compliance_remarks,
+        riskLevel: row.risk_level,
+        escalationContact: row.escalation_contact,
+        poAgreementReference: row.po_agreement_reference,
+        invoiceStatus: row.invoice_status,
+        renewalReminderDate: row.renewal_reminder_date,
+        createdAt: row.created_at
+      };
+    }
+
+    async function loadRecordsFromSupabase() {
+      const { data, error } = await supabaseClient
+        .from(TABLE_NAME)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        showToast(error.message || 'Failed to load records');
+        return;
+      }
+
+      records = (data || []).map(mapRowToRecord);
+      renderApp();
+    }
+
+    async function deleteRecord(id) {
+      if (!confirm('Delete this record?')) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from(TABLE_NAME)
+          .delete()
+          .eq('id', Number(id))
+          .select();
+
+        if (error) {
+          console.error(error);
+          showToast(error.message || 'Delete failed');
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          showToast('Delete not allowed or record not found');
+          return;
+        }
+
+        showToast('Record deleted');
+        await loadRecordsFromSupabase();
+      } catch (err) {
+        console.error(err);
+        showToast('Delete failed');
+      }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const button = document.getElementById('loginButton');
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      button.disabled = true;
+      button.textContent = 'Signing In...';
+
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+      button.disabled = false;
+      button.textContent = 'Sign In';
+
+      if (error) {
+        console.error(error);
+        showToast(error.message || 'Login failed');
+        return;
+      }
+
+      document.getElementById('loginForm').reset();
+      showToast('Login successful');
+    }
+
+    async function handleLogout() {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        console.error(error);
+        showToast(error.message || 'Failed to sign out');
+        return;
+      }
+      records = [];
+      renderApp();
+      showAuthScreen();
+      showToast('Signed out');
+    }
+
+    document.getElementById('trackerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const saveBtn = document.getElementById('saveRecordButton');
+
+      const payload = {
+        serial_no: document.getElementById('serialNo').value ? Number(document.getElementById('serialNo').value) : null,
+        project_code: document.getElementById('projectCode').value.trim(),
+        project_site: document.getElementById('projectSite').value.trim(),
+        services: document.getElementById('services').value.trim(),
+        frequency: document.getElementById('frequency').value.trim(),
+        contractor_type: document.getElementById('contractorType').value,
+        contractors: document.getElementById('contractors').value.trim(),
+        contract_status: document.getElementById('contractStatus').value,
+        comment: document.getElementById('comment').value.trim(),
+        contact_person: document.getElementById('contactPerson').value.trim(),
+        contact_number: document.getElementById('contactNumber').value.trim(),
+        email_id: document.getElementById('emailId').value.trim(),
+        contract_start_date: document.getElementById('contractStartDate').value || null,
+        contract_end_date: document.getElementById('contractEndDate').value || null,
+        contract_value_aed: safeNumber(document.getElementById('contractValueAed').value),
+        management_approved_budget_aed: safeNumber(document.getElementById('approvedBudgetAed').value),
+        payment_terms: document.getElementById('paymentTerms').value.trim(),
+        sla_kpi_status: document.getElementById('slaKpiStatus').value.trim(),
+        last_service_date: document.getElementById('lastServiceDate').value || null,
+        next_service_due_date: document.getElementById('nextServiceDueDate').value.trim(),
+        certification_license_validity: document.getElementById('certificationValidity').value.trim(),
+        issues_non_compliance_remarks: document.getElementById('issuesRemarks').value.trim(),
+        risk_level: document.getElementById('riskLevel').value,
+        escalation_contact: document.getElementById('escalationContact').value.trim(),
+        po_agreement_reference: document.getElementById('poAgreementReference').value.trim(),
+        invoice_status: document.getElementById('invoiceStatus').value.trim(),
+        renewal_reminder_date: document.getElementById('renewalReminderDate').value || null
+      };
+
+      if (!payload.services) {
+        showToast('Services is required');
+        return;
+      }
+
+      try {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        const id = document.getElementById('editId').value;
+        if (id) {
+          const { data, error } = await supabaseClient
+            .from(TABLE_NAME)
+            .update(payload)
+            .eq('id', Number(id))
+            .select();
+
+          if (error) throw error;
+          if (!data || data.length === 0) throw new Error('Update did not return any row');
+          showToast('Record updated');
+        } else {
+          const { data, error } = await supabaseClient
+            .from(TABLE_NAME)
+            .insert([payload])
+            .select();
+
+          if (error) throw error;
+          if (!data || data.length === 0) throw new Error('Insert did not return any row');
+          showToast('Record added');
+        }
+
+        await loadRecordsFromSupabase();
+        closeModal();
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Record save failed');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Record';
+      }
+    });
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SSP_AMC_Tracker_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('JSON exported');
+    }
+
+    function exportExcel() {
+      const rows = records.map(r => ({
+        'S. No.': r.serialNo || '',
+        'Project Code': r.projectCode || '',
+        'Project Site': r.projectSite || '',
+        'Services': r.services || '',
+        'Frequency': r.frequency || '',
+        'Contractor Type': r.contractorType || '',
+        'Contractors': r.contractors || '',
+        'Contract Status': r.contractStatus || '',
+        'Comment': r.comment || '',
+        'Contact Person': r.contactPerson || '',
+        'Contact Number': r.contactNumber || '',
+        'Email ID': r.emailId || '',
+        'Contract Start Date': formatDate(r.contractStartDate),
+        'Contract End Date': formatDate(r.contractEndDate),
+        'Contract Value (AED)': safeNumber(r.contractValueAed),
+        'Management Approved Budget (AED)': safeNumber(r.approvedBudgetAed),
+        'Payment Terms': r.paymentTerms || '',
+        'SLA / KPI Status': r.slaKpiStatus || '',
+        'Last Service Date': formatDate(r.lastServiceDate),
+        'Next Service Due Date': r.nextServiceDueDate || '',
+        'Certification / License Validity': r.certificationValidity || '',
+        'Issues / Non-Compliance Remarks': r.issuesRemarks || '',
+        'Risk Level': r.riskLevel || '',
+        'Escalation Contact': r.escalationContact || '',
+        'PO / Agreement Reference': r.poAgreementReference || '',
+        'Invoice Status': r.invoiceStatus || '',
+        'Renewal Reminder Date': formatDate(r.renewalReminderDate)
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'SSP_AMC_Tracker');
+      XLSX.writeFile(workbook, `SSP_AMC_Tracker_${new Date().toISOString().split('T')[0]}.xlsx`);
+      showToast('Excel downloaded');
+    }
+
+    async function handleImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!confirm('This will replace all current online records with the JSON file data. Continue?')) {
+        event.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!Array.isArray(imported)) throw new Error('Invalid JSON');
+
+          const rows = imported.map(item => ({
+            serial_no: item.serialNo ? Number(item.serialNo) : null,
+            project_code: item.projectCode || '',
+            project_site: item.projectSite || '',
+            services: item.services || '',
+            frequency: item.frequency || '',
+            contractor_type: item.contractorType || '',
+            contractors: item.contractors || '',
+            contract_status: item.contractStatus || '',
+            comment: item.comment || '',
+            contact_person: item.contactPerson || '',
+            contact_number: item.contactNumber || '',
+            email_id: item.emailId || '',
+            contract_start_date: item.contractStartDate || null,
+            contract_end_date: item.contractEndDate || null,
+            contract_value_aed: safeNumber(item.contractValueAed),
+            management_approved_budget_aed: safeNumber(item.approvedBudgetAed),
+            payment_terms: item.paymentTerms || '',
+            sla_kpi_status: item.slaKpiStatus || '',
+            last_service_date: item.lastServiceDate || null,
+            next_service_due_date: item.nextServiceDueDate || '',
+            certification_license_validity: item.certificationValidity || '',
+            issues_non_compliance_remarks: item.issuesRemarks || '',
+            risk_level: item.riskLevel || '',
+            escalation_contact: item.escalationContact || '',
+            po_agreement_reference: item.poAgreementReference || '',
+            invoice_status: item.invoiceStatus || '',
+            renewal_reminder_date: item.renewalReminderDate || null
+          }));
+
+          const { error: deleteError } = await supabaseClient
+            .from(TABLE_NAME)
+            .delete()
+            .neq('id', 0);
+
+          if (deleteError) {
+            console.error(deleteError);
+            showToast(deleteError.message || 'Failed to clear old records');
+            return;
+          }
+
+          if (rows.length) {
+            const { error: insertError } = await supabaseClient
+              .from(TABLE_NAME)
+              .insert(rows);
+
+            if (insertError) {
+              console.error(insertError);
+              showToast(insertError.message || 'Import failed');
+              return;
+            }
+          }
+
+          showToast('JSON imported');
+          await loadRecordsFromSupabase();
+        } catch (err) {
+          console.error(err);
+          showToast(err.message || 'Invalid JSON file');
+        }
+      };
+
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    async function handleSessionChange(session) {
+      if (!session?.user) {
+        showAuthScreen();
+        return;
+      }
+      showAppScreen(session.user);
+      await loadRecordsFromSupabase();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      applyTheme();
+      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+      document.getElementById('authThemeToggle').addEventListener('click', toggleTheme);
+      document.getElementById('loginForm').addEventListener('submit', handleLogin);
+      document.getElementById('logoutButton').addEventListener('click', handleLogout);
+
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      await handleSessionChange(session);
+
+      supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+        await handleSessionChange(session);
+      });
+    });
+  </script>
+</body>
+</html>
