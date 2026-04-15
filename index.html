@@ -400,27 +400,14 @@
         <input type="hidden" id="editId">
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label class="muted mb-2 block text-sm font-semibold">Serial No.</label><input type="number" id="serialNo" class="input-ui" placeholder="Auto generated" readonly></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Serial No.</label><input type="number" id="serialNo" class="input-ui"></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Project Code</label><input id="projectCode" class="input-ui"></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Project Site</label><input id="projectSite" class="input-ui"></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Services</label><input required id="services" class="input-ui"></div>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div>
-            <label class="muted mb-2 block text-sm font-semibold">Frequency</label>
-            <select id="frequency" onchange="updateContractDates()" class="input-ui">
-              <option value="">Select</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Monthly">Monthly</option>
-              <option value="Quarterly">Quarterly</option>
-              <option value="Semi Annual">Semi Annual</option>
-              <option value="Annual">Annual</option>
-              <option value="Bi Annual">Bi Annual</option>
-              <option value="2 Years">2 Years</option>
-              <option value="3 Years">3 Years</option>
-            </select>
-          </div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Frequency</label><input id="frequency" class="input-ui" placeholder="Monthly / Quarterly / etc."></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Contractor Type</label>
             <select id="contractorType" class="input-ui">
               <option value="">Select</option>
@@ -451,9 +438,9 @@
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label class="muted mb-2 block text-sm font-semibold">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Contract End Date</label><input type="date" id="contractEndDate" class="input-ui" readonly></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="input-ui" readonly></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Contract Start Date</label><input type="date" id="contractStartDate" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Contract End Date</label><input type="date" id="contractEndDate" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="input-ui"></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Last Service Date</label><input type="date" id="lastServiceDate" class="input-ui"></div>
         </div>
 
@@ -571,89 +558,6 @@
     function safeNumber(value) {
       const n = Number(value || 0);
       return Number.isFinite(n) ? n : 0;
-    }
-
-    function formatDateInputValue(value) {
-      if (!value) return '';
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return '';
-      return d.toISOString().slice(0, 10);
-    }
-
-    function addFrequency(date, frequency) {
-      const d = new Date(date);
-      if (isNaN(d.getTime()) || !frequency) return null;
-
-      switch (frequency) {
-        case 'Weekly':
-          d.setDate(d.getDate() + 7);
-          break;
-        case 'Monthly':
-          d.setMonth(d.getMonth() + 1);
-          break;
-        case 'Quarterly':
-          d.setMonth(d.getMonth() + 3);
-          break;
-        case 'Semi Annual':
-        case 'Bi Annual':
-          d.setMonth(d.getMonth() + 6);
-          break;
-        case 'Annual':
-          d.setFullYear(d.getFullYear() + 1);
-          break;
-        case '2 Years':
-          d.setFullYear(d.getFullYear() + 2);
-          break;
-        case '3 Years':
-          d.setFullYear(d.getFullYear() + 3);
-          break;
-        default:
-          return null;
-      }
-
-      return d;
-    }
-
-    function toDateInputString(date) {
-      if (!(date instanceof Date) || isNaN(date.getTime())) return '';
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    function updateContractDates() {
-      const start = document.getElementById('contractStartDate')?.value;
-      const frequency = document.getElementById('frequency')?.value;
-      const endEl = document.getElementById('contractEndDate');
-      const reminderEl = document.getElementById('renewalReminderDate');
-
-      if (!endEl || !reminderEl) return;
-
-      if (!start || !frequency) {
-        endEl.value = '';
-        reminderEl.value = '';
-        return;
-      }
-
-      const endDate = addFrequency(start, frequency);
-      if (!endDate) {
-        endEl.value = '';
-        reminderEl.value = '';
-        return;
-      }
-
-      endEl.value = toDateInputString(endDate);
-
-      const reminderDate = new Date(endDate);
-      reminderDate.setDate(reminderDate.getDate() - 30);
-      reminderEl.value = toDateInputString(reminderDate);
-    }
-
-    function getNextSerialNo() {
-      const max = records.reduce((m, r) => Math.max(m, Number(r.serialNo) || 0), 0);
-      return max + 1;
     }
 
     function currencyFormat(value) {
@@ -912,12 +816,10 @@
     function openModal() {
       document.getElementById('trackerForm').reset();
       document.getElementById('editId').value = '';
-      document.getElementById('serialNo').value = getNextSerialNo();
       document.getElementById('modalLabel').textContent = 'New entry';
       document.getElementById('modalTitle').textContent = 'Create contract record';
       document.getElementById('saveRecordButton').disabled = false;
       document.getElementById('saveRecordButton').textContent = 'Save Record';
-      updateContractDates();
       document.getElementById('modal').classList.remove('hidden');
       document.getElementById('modal').classList.add('flex');
     }
@@ -925,7 +827,6 @@
     function closeModal() {
       document.getElementById('trackerForm').reset();
       document.getElementById('editId').value = '';
-      document.getElementById('serialNo').value = '';
       document.getElementById('saveRecordButton').disabled = false;
       document.getElementById('saveRecordButton').textContent = 'Save Record';
       document.getElementById('modal').classList.add('hidden');
@@ -948,13 +849,13 @@
       document.getElementById('contactPerson').value = r.contactPerson || '';
       document.getElementById('contactNumber').value = r.contactNumber || '';
       document.getElementById('emailId').value = r.emailId || '';
-      document.getElementById('contractStartDate').value = formatDateInputValue(r.contractStartDate);
-      document.getElementById('contractEndDate').value = formatDateInputValue(r.contractEndDate);
+      document.getElementById('contractStartDate').value = r.contractStartDate || '';
+      document.getElementById('contractEndDate').value = r.contractEndDate || '';
       document.getElementById('contractValueAed').value = r.contractValueAed || '';
       document.getElementById('approvedBudgetAed').value = r.approvedBudgetAed || '';
       document.getElementById('paymentTerms').value = r.paymentTerms || '';
       document.getElementById('slaKpiStatus').value = r.slaKpiStatus || '';
-      document.getElementById('lastServiceDate').value = formatDateInputValue(r.lastServiceDate);
+      document.getElementById('lastServiceDate').value = r.lastServiceDate || '';
       document.getElementById('nextServiceDueDate').value = r.nextServiceDueDate || '';
       document.getElementById('certificationValidity').value = r.certificationValidity || '';
       document.getElementById('issuesRemarks').value = r.issuesRemarks || '';
@@ -962,12 +863,11 @@
       document.getElementById('escalationContact').value = r.escalationContact || '';
       document.getElementById('poAgreementReference').value = r.poAgreementReference || '';
       document.getElementById('invoiceStatus').value = r.invoiceStatus || '';
-      document.getElementById('renewalReminderDate').value = formatDateInputValue(r.renewalReminderDate);
+      document.getElementById('renewalReminderDate').value = r.renewalReminderDate || '';
       document.getElementById('modalLabel').textContent = 'Edit entry';
       document.getElementById('modalTitle').textContent = 'Update contract record';
       document.getElementById('saveRecordButton').disabled = false;
       document.getElementById('saveRecordButton').textContent = 'Save Record';
-      updateContractDates();
       document.getElementById('modal').classList.remove('hidden');
       document.getElementById('modal').classList.add('flex');
     }
@@ -1043,6 +943,7 @@
         }
 
         showToast('Record deleted');
+        closeModal();
         await loadRecordsFromSupabase();
       } catch (err) {
         console.error(err);
@@ -1096,7 +997,7 @@
         project_code: document.getElementById('projectCode').value.trim(),
         project_site: document.getElementById('projectSite').value.trim(),
         services: document.getElementById('services').value.trim(),
-        frequency: document.getElementById('frequency').value,
+        frequency: document.getElementById('frequency').value.trim(),
         contractor_type: document.getElementById('contractorType').value,
         contractors: document.getElementById('contractors').value.trim(),
         contract_status: document.getElementById('contractStatus').value,
@@ -1124,25 +1025,6 @@
       if (!payload.services) {
         showToast('Services is required');
         return;
-      }
-
-      if (!payload.contract_start_date) {
-        showToast('Contract Start Date is required');
-        return;
-      }
-
-      if (!payload.frequency) {
-        showToast('Frequency is required');
-        return;
-      }
-
-      if (!payload.contract_end_date) {
-        showToast('Contract End Date could not be calculated');
-        return;
-      }
-
-      if (!payload.serial_no) {
-        payload.serial_no = getNextSerialNo();
       }
 
       try {
