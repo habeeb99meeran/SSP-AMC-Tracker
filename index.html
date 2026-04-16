@@ -409,7 +409,7 @@
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div>
             <label class="muted mb-2 block text-sm font-semibold">Frequency</label>
-            <select id="frequency" onchange="updateContractDates()" class="input-ui">
+            <select id="frequency" onchange="updateNextServiceDueDate()" class="input-ui">
               <option value="">Select</option>
               <option value="Weekly">Weekly</option>
               <option value="Monthly">Monthly</option>
@@ -454,7 +454,7 @@
           <div><label class="muted mb-2 block text-sm font-semibold">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="input-ui"></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Contract End Date</label><input type="date" id="contractEndDate" class="input-ui" readonly></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="input-ui" readonly></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Last Service Date</label><input type="date" id="lastServiceDate" class="input-ui"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Last Service Date</label><input type="date" id="lastServiceDate" onchange="updateNextServiceDueDate()" class="input-ui"></div>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -466,7 +466,7 @@
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div><label class="muted mb-2 block text-sm font-semibold">SLA / KPI Status</label><input id="slaKpiStatus" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Next Service Due Date</label><input id="nextServiceDueDate" class="input-ui" placeholder="Text or date"></div>
+          <div><label class="muted mb-2 block text-sm font-semibold">Next Service Due Date</label><input type="date" id="nextServiceDueDate" class="input-ui" readonly></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Certification / License Validity</label><input id="certificationValidity" class="input-ui"></div>
           <div><label class="muted mb-2 block text-sm font-semibold">Risk Level</label>
             <select id="riskLevel" class="input-ui">
@@ -625,30 +625,51 @@
 
     function updateContractDates() {
       const start = document.getElementById('contractStartDate')?.value;
-      const frequency = document.getElementById('frequency')?.value;
       const endEl = document.getElementById('contractEndDate');
       const reminderEl = document.getElementById('renewalReminderDate');
 
       if (!endEl || !reminderEl) return;
 
-      if (!start || !frequency) {
+      if (!start) {
         endEl.value = '';
         reminderEl.value = '';
         return;
       }
 
-      const endDate = addFrequency(start, frequency);
-      if (!endDate) {
+      const endDate = new Date(start);
+      if (isNaN(endDate.getTime())) {
         endEl.value = '';
         reminderEl.value = '';
         return;
       }
 
+      endDate.setFullYear(endDate.getFullYear() + 1);
       endEl.value = toDateInputString(endDate);
 
       const reminderDate = new Date(endDate);
       reminderDate.setDate(reminderDate.getDate() - 30);
       reminderEl.value = toDateInputString(reminderDate);
+    }
+
+    function updateNextServiceDueDate() {
+      const lastService = document.getElementById('lastServiceDate')?.value;
+      const frequency = document.getElementById('frequency')?.value;
+      const nextServiceEl = document.getElementById('nextServiceDueDate');
+
+      if (!nextServiceEl) return;
+
+      if (!lastService || !frequency) {
+        nextServiceEl.value = '';
+        return;
+      }
+
+      const nextDate = addFrequency(lastService, frequency);
+      if (!nextDate) {
+        nextServiceEl.value = '';
+        return;
+      }
+
+      nextServiceEl.value = toDateInputString(nextDate);
     }
 
     function getNextSerialNo() {
@@ -918,6 +939,7 @@
       document.getElementById('saveRecordButton').disabled = false;
       document.getElementById('saveRecordButton').textContent = 'Save Record';
       updateContractDates();
+      updateNextServiceDueDate();
       document.getElementById('modal').classList.remove('hidden');
       document.getElementById('modal').classList.add('flex');
     }
@@ -955,7 +977,7 @@
       document.getElementById('paymentTerms').value = r.paymentTerms || '';
       document.getElementById('slaKpiStatus').value = r.slaKpiStatus || '';
       document.getElementById('lastServiceDate').value = formatDateInputValue(r.lastServiceDate);
-      document.getElementById('nextServiceDueDate').value = r.nextServiceDueDate || '';
+      document.getElementById('nextServiceDueDate').value = formatDateInputValue(r.nextServiceDueDate);
       document.getElementById('certificationValidity').value = r.certificationValidity || '';
       document.getElementById('issuesRemarks').value = r.issuesRemarks || '';
       document.getElementById('riskLevel').value = r.riskLevel || '';
@@ -968,6 +990,7 @@
       document.getElementById('saveRecordButton').disabled = false;
       document.getElementById('saveRecordButton').textContent = 'Save Record';
       updateContractDates();
+      updateNextServiceDueDate();
       document.getElementById('modal').classList.remove('hidden');
       document.getElementById('modal').classList.add('flex');
     }
@@ -1152,13 +1175,23 @@
         return;
       }
 
+      if (!payload.contract_end_date) {
+        showToast('Contract End Date could not be calculated');
+        return;
+      }
+
+      if (!payload.last_service_date) {
+        showToast('Last Service Date is required');
+        return;
+      }
+
       if (!payload.frequency) {
         showToast('Frequency is required');
         return;
       }
 
-      if (!payload.contract_end_date) {
-        showToast('Contract End Date could not be calculated');
+      if (!payload.next_service_due_date) {
+        showToast('Next Service Due Date could not be calculated');
         return;
       }
 
