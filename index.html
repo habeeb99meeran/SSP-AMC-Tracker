@@ -4,496 +4,93 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SSP & AMC Contract Tracker</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
-
-    :root {
-      --bg-1: #dbeafe;
-      --bg-2: #ede9fe;
-      --bg-3: #ccfbf1;
-      --text: #0f172a;
-      --muted: #5b6b82;
-      --line: rgba(255,255,255,0.45);
-      --panel: rgba(255,255,255,0.22);
-      --panel-strong: rgba(255,255,255,0.34);
-      --panel-soft: rgba(255,255,255,0.18);
-      --shadow: 0 20px 60px rgba(31, 41, 55, 0.18);
-      --shadow-soft: 0 10px 30px rgba(31, 41, 55, 0.12);
-      --accent-a: #2563eb;
-      --accent-b: #7c3aed;
-      --accent-c: #0f766e;
-      --soft-block: rgba(255,255,255,0.18);
-      --soft-border: rgba(255,255,255,0.35);
-      --soft-text: #1e293b;
-    }
-
-    body.dark-mode {
-      --bg-1: #0f172a;
-      --bg-2: #1e1b4b;
-      --bg-3: #083344;
-      --text: #e8eefc;
-      --muted: #94a3b8;
-      --line: rgba(255,255,255,0.12);
-      --panel: rgba(15,23,42,0.42);
-      --panel-strong: rgba(15,23,42,0.56);
-      --panel-soft: rgba(15,23,42,0.32);
-      --shadow: 0 24px 70px rgba(2,6,23,0.42);
-      --shadow-soft: 0 14px 34px rgba(2,6,23,0.26);
-      --soft-block: rgba(255,255,255,0.05);
-      --soft-border: rgba(255,255,255,0.10);
-      --soft-text: #dbe7ff;
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background:
-        radial-gradient(circle at 10% 10%, rgba(37,99,235,0.45), transparent 24%),
-        radial-gradient(circle at 90% 8%, rgba(124,58,237,0.35), transparent 20%),
-        radial-gradient(circle at 50% 100%, rgba(15,118,110,0.28), transparent 26%),
-        linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 52%, var(--bg-3) 100%);
-      color: var(--text);
-      min-height: 100vh;
-      -webkit-tap-highlight-color: transparent;
-      transition: background .25s ease, color .25s ease;
-    }
-
-    .display-font { font-family: 'Space Grotesk', sans-serif; }
-
-    .panel,
-    .panel-soft {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow-soft);
-      backdrop-filter: blur(24px) saturate(160%);
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .panel-soft {
-      background: linear-gradient(135deg, var(--panel-strong), var(--panel-soft));
-      box-shadow: var(--shadow);
-    }
-
-    .panel::before,
-    .panel-soft::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.04));
-      pointer-events: none;
-    }
-
-    .input-ui {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,0.18);
-      color: var(--text);
-      border-radius: 16px;
-      padding: 14px 16px;
-      font: inherit;
-      outline: none;
-      transition: .2s ease;
-      backdrop-filter: blur(18px) saturate(150%);
-      -webkit-backdrop-filter: blur(18px) saturate(150%);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
-    }
-
-    body.dark-mode .input-ui { background: rgba(15,23,42,0.26); }
-    .input-ui::placeholder { color: var(--muted); }
-    .input-ui:focus {
-      border-color: rgba(255,255,255,0.55);
-      box-shadow: 0 0 0 4px rgba(255,255,255,0.10);
-    }
-
-    .muted { color: var(--muted); }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      border: 1px solid rgba(255,255,255,0.28);
-      background: rgba(255,255,255,0.14);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-
-    .soft-block {
-      background: var(--soft-block);
-      border-color: var(--soft-border) !important;
-      color: var(--soft-text);
-      backdrop-filter: blur(18px) saturate(150%);
-      -webkit-backdrop-filter: blur(18px) saturate(150%);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-    }
-
-    .fade-up { animation: fadeUp .25s ease-out; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .grid-auto {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-    }
-
-    @media (max-width: 1024px) {
-      .grid-auto { grid-template-columns: 1fr; }
-    }
-
-    .nav-btn.active {
-      background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-      color: white;
-      border-color: transparent;
-      box-shadow: 0 12px 28px rgba(37,99,235,0.28);
-    }
-
-    .action-gradient {
-      background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-      box-shadow: 0 16px 34px rgba(37,99,235,0.28);
-    }
-
-    .fab-gradient {
-      background: linear-gradient(135deg, var(--accent-a), var(--accent-b), var(--accent-c));
-      box-shadow: 0 18px 38px rgba(37,99,235,0.30);
-    }
-
-    .mobile-safe-bottom { padding-bottom: 110px; }
-    @media (max-width: 768px) {
-      .mobile-safe-bottom { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
-      .mobile-nav { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-    }
-
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 999px; }
-    ::-webkit-scrollbar-track { background: transparent; }
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+    :root{--bg:#f0f4f8;--surface:#fff;--surface-2:#f7f9fc;--surface-3:#eef2f8;--border:rgba(0,0,0,.08);--border-hover:rgba(0,0,0,.15);--text:#0f1d2e;--text-2:#4a5f78;--text-3:#8fa0b8;--accent:#2563eb;--accent-2:#4f46e5;--accent-glow:rgba(37,99,235,.12);--green:#10b981;--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--cyan:#06b6d4;--shadow:0 2px 12px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);--radius:16px;--radius-sm:10px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace}
+    body.dark-mode{--bg:#0b0f1a;--surface:#111827;--surface-2:#1a2236;--surface-3:#1f2d42;--border:rgba(255,255,255,.07);--border-hover:rgba(255,255,255,.14);--text:#e8edf5;--text-2:#8fa0b8;--text-3:#5a6e88;--accent:#3b82f6;--accent-2:#6366f1;--accent-glow:rgba(59,130,246,.18);--shadow:0 4px 24px rgba(0,0,0,.4);--shadow-lg:0 12px 48px rgba(0,0,0,.5)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;transition:background .2s,color .2s}.hidden{display:none!important}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}@media(max-width:900px){.app{grid-template-columns:1fr}}
+    .sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 16px;gap:8px}@media(max-width:900px){.sidebar{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:16px}}
+    .brand{display:flex;align-items:center;gap:12px;padding:8px 12px 24px;border-bottom:1px solid var(--border);margin-bottom:8px}.brand-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 6px 20px var(--accent-glow);font-size:18px}.brand-text h1{font-size:16px;font-weight:700}.brand-text p{font-size:11px;color:var(--text-3);font-weight:500;margin-top:1px}
+    .nav-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);padding:4px 14px 6px;margin-top:8px}.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border-radius:var(--radius-sm);background:none;border:none;color:var(--text-2);font:inherit;font-weight:500;font-size:13.5px;cursor:pointer;text-align:left;transition:.15s}.nav-btn:hover{background:var(--surface-2);color:var(--text)}.nav-btn.active{background:var(--accent-glow);color:var(--accent);font-weight:700}.nav-spacer{flex:1}.sidebar-footer{padding:16px 12px 0;border-top:1px solid var(--border)}.sync-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3)}.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text-3)}.sync-dot.connected{background:var(--green);box-shadow:0 0 6px var(--green)}
+    .main{overflow:hidden}.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;backdrop-filter:blur(12px)}.page-title{font-size:22px;font-weight:800;letter-spacing:-.03em}.page-subtitle{font-size:12.5px;color:var(--text-3)}.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.content{padding:24px 28px}@media(max-width:600px){.topbar{padding:12px 16px}.content{padding:16px}}
+    .btn,.icon-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:700;cursor:pointer;transition:.15s}.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;border-radius:var(--radius-sm);font-size:13px;white-space:nowrap}.btn:hover,.icon-btn:hover{background:var(--surface-2);border-color:var(--border-hover)}.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:0 4px 16px var(--accent-glow)}.btn.sm{padding:6px 12px;font-size:12px;border-radius:8px}.btn.danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25);color:var(--red)}.btn.success-btn{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.25);color:var(--green)}.icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);display:grid;place-items:center;font-size:15px}
+    .card,.stat-card,.record-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}.card{padding:20px}.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px}.card-title{font-size:14px;font-weight:800}.card-subtitle{font-size:12px;color:var(--text-3);margin-top:2px}.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px}@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.stats-grid{grid-template-columns:repeat(2,1fr)}}.stat-card{padding:18px 20px;position:relative;overflow:hidden}.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-color,var(--accent))}.stat-card:hover,.record-card:hover{border-color:var(--border-hover);transform:translateY(-1px);box-shadow:var(--shadow-lg)}.stat-label{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px}.stat-value{font-size:28px;font-weight:900;letter-spacing:-.04em;line-height:1;color:var(--stat-color,var(--text))}.stat-sub{font-size:11.5px;color:var(--text-3);margin-top:6px}.stat-blue{--accent-color:var(--accent);--stat-color:var(--accent)}.stat-green{--accent-color:var(--green);--stat-color:var(--green)}.stat-amber{--accent-color:var(--amber);--stat-color:var(--amber)}.stat-red{--accent-color:var(--red);--stat-color:var(--red)}.stat-cyan{--accent-color:var(--cyan);--stat-color:var(--cyan)}
+    .dash-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-top:20px}@media(max-width:1000px){.dash-grid{grid-template-columns:1fr}}.mini-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mini-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px}.mini-card-label{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}.mini-card-value{font-size:22px;font-weight:900;letter-spacing:-.03em}.records-card-grid{display:grid;gap:14px}.record-card{padding:18px;transition:.18s}.record-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}.record-card-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.record-mr{font-family:var(--mono);font-size:15px;font-weight:900}.record-card-sub{color:var(--text-3);font-size:12.5px;margin-top:5px}.record-card-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.record-details-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}@media(max-width:1150px){.record-details-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:780px){.record-card-header{flex-direction:column}.record-card-actions{justify-content:flex-start}.record-details-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.record-details-grid{grid-template-columns:1fr}}.record-field{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;min-height:62px}.record-label{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:5px}.record-value{font-size:13.5px;color:var(--text);font-weight:700;word-break:break-word}.record-value.muted{color:var(--text-3);font-weight:500}.record-material{margin-top:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}.record-material .record-value{font-weight:500;white-space:pre-wrap}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;white-space:nowrap;border:1px solid transparent}.badge-blue{background:rgba(59,130,246,.12);color:#60a5fa;border-color:rgba(59,130,246,.2)}.badge-green{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.2)}.badge-amber{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.2)}.badge-red{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.2)}.badge-purple{background:rgba(139,92,246,.12);color:#a78bfa;border-color:rgba(139,92,246,.2)}.badge-gray{background:rgba(148,163,184,.1);color:var(--text-2);border-color:rgba(148,163,184,.15)}body:not(.dark-mode) .badge-blue{color:#1d4ed8}body:not(.dark-mode) .badge-green{color:#059669}body:not(.dark-mode) .badge-amber{color:#d97706}body:not(.dark-mode) .badge-red{color:#dc2626}body:not(.dark-mode) .badge-purple{color:#6d28d9}
+    .filters-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}.field{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:var(--radius-sm);padding:9px 13px;font:inherit;font-size:13px;outline:none;transition:.15s}.field:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}.field::placeholder{color:var(--text-3)}input.field{min-width:220px}select.field{cursor:pointer}.chip-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}.chip{padding:6px 13px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;transition:.15s}.chip:hover{background:var(--surface-2);color:var(--text)}.chip.active{background:var(--accent-glow);color:var(--accent);border-color:rgba(59,130,246,.3)}.recent-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}.recent-item:last-child{border-bottom:none}.recent-main{flex:1;min-width:0}.recent-title{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.recent-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+    .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;padding:0}.modal-backdrop.open{display:flex}@media(min-width:700px){.modal-backdrop{align-items:center;padding:24px}}.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;width:100%;max-width:1100px;max-height:95vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:slideUp .2s ease}@media(min-width:700px){.modal-box{border-radius:var(--radius);max-height:92vh}}@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}.modal-header{position:sticky;top:0;background:var(--surface);z-index:5;padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}.modal-title{font-size:18px;font-weight:800}.modal-body{padding:20px 24px}.modal-footer{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:16px 24px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.form-grid{display:grid;gap:16px}.form-grid.cols-2{grid-template-columns:1fr 1fr}.form-grid.cols-4{grid-template-columns:repeat(4,1fr)}@media(max-width:900px){.form-grid.cols-4{grid-template-columns:repeat(2,1fr)}}@media(max-width:640px){.form-grid.cols-2,.form-grid.cols-4{grid-template-columns:1fr}}.form-group{display:flex;flex-direction:column;gap:6px}.form-label{font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--text-2);text-transform:uppercase}.form-group .field,textarea.field{width:100%}textarea.field{min-height:88px;resize:vertical}.form-separator{grid-column:1/-1;border-top:1px solid var(--border);margin:4px 0}.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 18px;font-size:13.5px;font-weight:700;box-shadow:var(--shadow-lg);transition:.25s;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}.settings-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}@media(max-width:800px){.settings-grid{grid-template-columns:1fr}}.conn-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(148,163,184,.08);border:1px solid var(--border);color:var(--text-3)}.conn-badge.live{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.25);color:var(--green)}.conn-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}.empty-state{text-align:center;padding:56px 20px;color:var(--text-3)}.empty-state .icon{font-size:42px;margin-bottom:14px;opacity:.6}.fab{position:fixed;bottom:28px;right:28px;z-index:50;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border:none;color:white;font-size:24px;cursor:pointer;box-shadow:0 8px 24px var(--accent-glow);display:none;align-items:center;justify-content:center}@media(max-width:900px){.fab{display:flex}.sidebar .nav-label{display:none}.nav-spacer{display:none}.brand-text p{display:none}}.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 15% 10%,var(--accent-glow),transparent 28%),radial-gradient(circle at 85% 80%,rgba(99,102,241,.16),transparent 30%),var(--bg)}.auth-card{width:100%;max-width:460px;background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:28px;box-shadow:var(--shadow-lg)}.auth-mark{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-size:22px;box-shadow:0 8px 28px var(--accent-glow);margin-bottom:18px}.auth-title{font-size:28px;font-weight:900;letter-spacing:-.04em;line-height:1.1}.auth-subtitle{color:var(--text-3);font-size:13.5px;margin-top:10px}.auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.auth-note{margin-top:14px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-3);font-size:12.5px}@media(max-width:520px){.auth-card{padding:22px;border-radius:22px}.auth-actions{grid-template-columns:1fr}}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:999px}::-webkit-scrollbar-track{background:transparent}
   </style>
 </head>
 <body>
-  <section id="authScreen" class="min-h-screen px-4 py-8 flex items-center justify-center">
-    <div class="panel-soft w-full max-w-md rounded-[32px] p-6 md:p-8">
-      <div class="mb-6">
-        <div class="mb-3 inline-flex items-center gap-2 rounded-full soft-block px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-          <span>●</span> Secure Access
-        </div>
-        <h1 class="display-font text-3xl font-bold tracking-tight">SSP & AMC Tracker Login</h1>
-        <p class="muted mt-3 text-sm">Sign in with an approved account to view and manage contracts.</p>
-      </div>
+<section class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-mark">🛡️</div>
+    <div class="auth-title">SSP & AMC Tracker Login</div>
+    <div class="auth-subtitle">Sign in with an approved account to view and manage contracts.</div>
+    <form id="loginForm" style="margin-top:22px;display:grid;gap:12px;">
+      <div class="form-group"><label class="form-label">Email</label><input class="field" id="loginEmail" type="email" placeholder="you@example.com" required></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="field" id="loginPassword" type="password" placeholder="Password" required></div>
+      <div class="auth-actions"><button class="btn primary" id="loginButton" type="submit">Sign In</button><button class="btn" type="button" id="createAccountButton">Create Account</button></div>
+    </form>
+    <div class="auth-note" id="authStatusMsg">Enter your email and password to continue.</div>
+    <div style="display:flex;justify-content:center;margin-top:14px;"><button class="btn sm" type="button" id="authThemeToggle">Toggle Theme</button></div>
+  </div>
+</section>
 
-      <form id="loginForm" class="space-y-4">
-        <div>
-          <label class="muted mb-2 block text-sm font-semibold">Email</label>
-          <input id="loginEmail" type="email" required class="input-ui" placeholder="name@example.com">
-        </div>
-        <div>
-          <label class="muted mb-2 block text-sm font-semibold">Password</label>
-          <input id="loginPassword" type="password" required class="input-ui" placeholder="Enter password">
-        </div>
-        <button id="loginButton" type="submit" class="w-full rounded-2xl action-gradient px-5 py-3 font-bold text-white">Sign In</button>
-      </form>
-
-      <div class="mt-4 text-center">
-        <button id="authThemeToggle" class="rounded-2xl border border-white/30 bg-white/20 px-4 py-3 text-sm font-bold text-[var(--text)] backdrop-blur-xl">Dark</button>
-      </div>
+<div class="app hidden" id="appShell" data-theme="dark">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">🛡️</div><div class="brand-text"><h1>SSP & AMC</h1><p>Contract Tracker</p></div></div>
+    <span class="nav-label">Workspace</span>
+    <button class="nav-btn active" data-view="dashboard"><span class="icon">▦</span> Dashboard</button>
+    <button class="nav-btn" data-view="list"><span class="icon">☰</span> Contract List</button>
+    <span class="nav-label">Manage</span>
+    <button class="nav-btn" data-view="settings"><span class="icon">⚙</span> Settings & Sync</button>
+    <div class="nav-spacer"></div>
+    <div class="sidebar-footer"><div class="sync-status"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">Not connected</span></div><div style="margin-top:10px;font-size:11.5px;color:var(--text-3);word-break:break-word" id="userEmailSidebar"></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="page-title" id="topbarTitle">Dashboard</div><div class="page-subtitle" id="topbarSub">Contract overview, renewal watch, and tracker health</div></div>
+      <div class="topbar-actions"><button class="icon-btn" id="themeToggle" title="Toggle theme">🌙</button><button class="btn sm" onclick="exportExcel()">↓ Excel</button><button class="btn sm" onclick="exportData()">↓ JSON</button><label class="btn sm" style="cursor:pointer;">↑ Import <input type="file" id="importFile" accept=".json" hidden onchange="handleImport(event)"></label><button class="btn primary" onclick="openModal()">+ Add Contract</button></div>
     </div>
-  </section>
-
-  <div id="appShell" class="mobile-safe-bottom hidden">
-    <main class="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-4 md:px-6 md:pb-28 md:pt-6 lg:px-8">
-      <section class="mb-6 grid gap-4 xl:grid-cols-[1.15fr,0.85fr]">
-        <div class="panel-soft rounded-[28px] p-5 md:p-8">
-          <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div class="mb-3 inline-flex items-center gap-2 rounded-full soft-block px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-                <span>●</span> Supabase Workspace
-              </div>
-              <h1 class="display-font text-3xl font-bold tracking-tight md:text-5xl">SSP & AMC Contract Tracker</h1>
-              <p class="muted mt-3 max-w-2xl text-sm md:text-base">Track contracts, service schedules, contacts, risk, invoice status, and renewal planning in one workspace.</p>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button id="themeToggle" class="rounded-2xl border border-white/30 bg-white/20 px-4 py-3 text-sm font-bold text-[var(--text)] backdrop-blur-xl">Dark</button>
-              <button id="logoutButton" class="rounded-2xl border border-white/30 bg-white/20 px-4 py-3 text-sm font-bold text-[var(--text)] backdrop-blur-xl">Sign Out</button>
-              <button onclick="openModal()" class="rounded-2xl action-gradient px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(59,130,246,0.28)]">Add Contract</button>
-            </div>
-          </div>
-
-          <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
-            <span class="chip" style="background:#dcfce7;color:#166534;border-color:#bbf7d0">Signed In</span>
-            <span id="userEmailDisplay" class="muted"></span>
-          </div>
-
-          <div class="flex flex-wrap gap-3">
-            <button id="tabDashboard" onclick="switchPage('dashboard')" class="nav-btn active rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold">Dashboard</button>
-            <button id="tabList" onclick="switchPage('list')" class="nav-btn rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold">Contract List</button>
-          </div>
-        </div>
-
-        <div class="panel rounded-[28px] p-5 md:p-8">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Actions</div>
-              <h2 class="display-font mt-1 text-2xl font-bold">Control Center</h2>
-            </div>
-            <div class="rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--text)] ring-1 ring-white/30 soft-block">Online</div>
-          </div>
-
-          <div class="space-y-3">
-            <button onclick="document.getElementById('importFile').click()" class="input-ui text-left">
-              <div class="font-semibold">Import JSON</div>
-              <div class="muted mt-1 text-sm">Replace all online records from JSON</div>
-            </button>
-            <button onclick="exportData()" class="input-ui text-left">
-              <div class="font-semibold">Export JSON</div>
-              <div class="muted mt-1 text-sm">Backup current tracker data</div>
-            </button>
-            <button onclick="exportExcel()" class="input-ui text-left">
-              <div class="font-semibold">Download Excel</div>
-              <div class="muted mt-1 text-sm">Export tracker data in .xlsx format</div>
-            </button>
-            <div class="input-ui">
-              <div class="font-semibold">Today</div>
-              <div id="currentDate" class="muted mt-1 text-sm"></div>
-            </div>
-          </div>
-          <input type="file" id="importFile" class="hidden" accept=".json" onchange="handleImport(event)">
-        </div>
-      </section>
-
+    <div class="content">
       <section id="dashboardPage">
-        <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" id="statsGrid"></div>
-
-        <section class="mb-6 grid gap-4 lg:grid-cols-[0.95fr,1.05fr]">
-          <div class="panel rounded-[28px] p-4 md:p-5">
-            <div class="mb-4 flex items-center justify-between">
-              <div>
-                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Overview</div>
-                <h3 class="display-font mt-1 text-xl font-bold">Tracker Health</h3>
-              </div>
-            </div>
-            <div id="overviewCards" class="grid gap-3 sm:grid-cols-2"></div>
-          </div>
-
-          <div class="panel rounded-[28px] p-4 md:p-5">
-            <div class="mb-4 flex items-center justify-between">
-              <div>
-                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Renewal Watch</div>
-                <h3 class="display-font mt-1 text-xl font-bold">Upcoming Contracts</h3>
-              </div>
-            </div>
-            <div id="renewalList" class="space-y-3"></div>
-          </div>
-        </section>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="dash-grid">
+          <div class="card"><div class="card-header"><div><div class="card-title">Tracker Health</div><div class="card-subtitle">Overview of SSP & AMC contract activity</div></div></div><div class="mini-cards" id="overviewCards"></div></div>
+          <div class="card"><div class="card-header"><div><div class="card-title">Renewal Watch</div><div class="card-subtitle">Closest reminder and end dates</div></div></div><div id="renewalList"></div></div>
+        </div>
       </section>
-
       <section id="listPage" class="hidden">
-        <section class="mb-6 grid gap-4 lg:grid-cols-[0.9fr,1.1fr]">
-          <div class="panel rounded-[28px] p-4 md:p-5">
-            <div class="mb-4 flex items-center justify-between">
-              <div>
-                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Filters</div>
-                <h3 class="display-font mt-1 text-xl font-bold">Refine View</h3>
-              </div>
-              <button onclick="resetFilters()" class="rounded-xl soft-block px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">Reset</button>
-            </div>
-
-            <div class="space-y-3">
-              <input id="searchInput" type="text" placeholder="Search project, service, contractor, PO, email..." oninput="renderApp()" class="input-ui">
-              <div class="grid gap-3 sm:grid-cols-2">
-                <select id="statusFilter" onchange="renderApp()" class="input-ui">
-                  <option value="All">All Contract Status</option>
-                  <option value="Valid">Valid</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Not Valid">Not Valid</option>
-                  <option value="Expired">Expired</option>
-                </select>
-                <select id="riskFilter" onchange="renderApp()" class="input-ui">
-                  <option value="All">All Risk Levels</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-2">
-                <select id="typeFilter" onchange="renderApp()" class="input-ui">
-                  <option value="All">All Contractor Types</option>
-                  <option value="External">External</option>
-                  <option value="Internal">Internal</option>
-                  <option value="In-House">In-House</option>
-                </select>
-                <select id="sortSelect" onchange="renderApp()" class="input-ui">
-                  <option value="recent">Sort: Recent</option>
-                  <option value="renewal">Sort: Renewal date</option>
-                  <option value="valueHigh">Sort: Value High-Low</option>
-                  <option value="valueLow">Sort: Value Low-High</option>
-                  <option value="service">Sort: Service</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel rounded-[28px] p-4 md:p-5">
-            <div class="mb-4 flex items-center justify-between">
-              <div>
-                <div class="muted text-xs font-semibold uppercase tracking-[0.2em]">Quick Status Filter</div>
-                <h3 class="display-font mt-1 text-xl font-bold">Browse by Contract Status</h3>
-              </div>
-            </div>
-
-            <div class="grid gap-3 sm:grid-cols-3">
-              <button id="quickAll" onclick="quickStatus('All')" class="soft-block rounded-2xl border px-4 py-4 text-left">
-                <div class="text-sm font-bold">All Records</div>
-                <div class="muted mt-1 text-xs">See everything</div>
-              </button>
-              <button id="quickValid" onclick="quickStatus('Valid')" class="soft-block rounded-2xl border px-4 py-4 text-left">
-                <div class="text-sm font-bold">Valid</div>
-                <div class="muted mt-1 text-xs">Active contracts</div>
-              </button>
-              <button id="quickProgress" onclick="quickStatus('In Progress')" class="soft-block rounded-2xl border px-4 py-4 text-left">
-                <div class="text-sm font-bold">In Progress</div>
-                <div class="muted mt-1 text-xs">Under processing</div>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section id="itemsGrid" class="grid-auto"></section>
+        <div class="card" style="margin-bottom:16px;"><div class="card-header"><div><div class="card-title">Filters</div><div class="card-subtitle">Search by project, service, contractor, PO, email, or invoice status</div></div><button class="btn sm" onclick="resetFilters()">Reset</button></div>
+          <div class="filters-row"><input class="field" id="searchInput" type="text" placeholder="Search project, service, contractor, PO, email..." oninput="renderApp()"><select class="field" id="statusFilter" onchange="renderApp()"><option value="All">All Contract Status</option><option value="Valid">Valid</option><option value="In Progress">In Progress</option><option value="Not Valid">Not Valid</option><option value="Expired">Expired</option></select><select class="field" id="riskFilter" onchange="renderApp()"><option value="All">All Risk Levels</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select><select class="field" id="typeFilter" onchange="renderApp()"><option value="All">All Contractor Types</option><option value="External">External</option><option value="Internal">Internal</option><option value="In-House">In-House</option></select><select class="field" id="sortSelect" onchange="renderApp()"><option value="recent">Recent first</option><option value="renewal">Renewal date</option><option value="valueHigh">Value High-Low</option><option value="valueLow">Value Low-High</option><option value="service">Service A-Z</option></select></div>
+          <div class="chip-row"><button id="quickAll" onclick="quickStatus('All')" class="chip active">All Records</button><button id="quickValid" onclick="quickStatus('Valid')" class="chip">Valid</button><button id="quickProgress" onclick="quickStatus('In Progress')" class="chip">In Progress</button></div>
+        </div>
+        <div class="records-card-grid" id="itemsGrid"></div>
       </section>
-    </main>
-
-    <button onclick="openModal()" class="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-2xl fab-gradient text-white shadow-[0_18px_34px_rgba(59,130,246,0.30)] md:bottom-8 md:right-8">+</button>
-
-    <nav class="mobile-nav panel fixed bottom-0 left-0 right-0 z-50 border-t px-2 py-2 sm:px-4 sm:py-3">
-      <div class="mx-auto grid max-w-7xl grid-cols-4 gap-2 sm:flex sm:items-center sm:justify-between sm:gap-3">
-        <button onclick="switchPage('dashboard')" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">Dashboard</button>
-        <button onclick="switchPage('list')" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">List</button>
-        <button onclick="toggleTheme()" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">Theme</button>
-        <button onclick="openModal()" class="rounded-2xl px-2 py-3 text-[11px] font-semibold text-[var(--text)] sm:px-4 sm:text-sm">Add</button>
-      </div>
-    </nav>
-  </div>
-
-  <div id="modal" class="fixed inset-0 z-[70] hidden items-end justify-center overflow-y-auto bg-slate-950/45 p-0 md:items-center md:p-4">
-    <div class="panel relative my-auto w-full max-w-6xl rounded-t-[28px] p-4 md:max-h-[92vh] md:rounded-[32px] md:p-6">
-      <div class="sticky top-0 z-10 mb-6 flex items-center justify-between rounded-2xl bg-transparent pb-3 pt-1">
-        <div>
-          <div id="modalLabel" class="muted text-xs font-semibold uppercase tracking-[0.2em]">New entry</div>
-          <h2 id="modalTitle" class="display-font mt-1 text-2xl font-bold">Create contract record</h2>
-        </div>
-        <button onclick="closeModal()" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">Close</button>
-      </div>
-
-      <form id="trackerForm" class="max-h-[78vh] space-y-5 overflow-y-auto pr-1 md:max-h-[74vh] md:pr-2">
-        <input type="hidden" id="editId">
-
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label class="muted mb-2 block text-sm font-semibold">Serial No.</label><input type="number" id="serialNo" class="input-ui" placeholder="Auto generated" readonly></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Project Code</label><input id="projectCode" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Project Site</label><input id="projectSite" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Services</label><input required id="services" class="input-ui"></div>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div>
-            <label class="muted mb-2 block text-sm font-semibold">Frequency</label>
-            <select id="frequency" onchange="updateNextServiceDueDate()" class="input-ui">
-              <option value="">Select</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Monthly">Monthly</option>
-              <option value="Quarterly">Quarterly</option>
-              <option value="Semi Annual">Semi Annual</option>
-              <option value="Annual">Annual</option>
-              <option value="Bi Annual">Bi Annual</option>
-              <option value="2 Years">2 Years</option>
-              <option value="3 Years">3 Years</option>
-            </select>
-          </div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Contractor Type</label>
-            <select id="contractorType" class="input-ui">
-              <option value="">Select</option>
-              <option value="External">External</option>
-              <option value="Internal">Internal</option>
-              <option value="In-House">In-House</option>
-            </select>
-          </div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Contractors</label><input id="contractors" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Contract Status</label>
-            <select id="contractStatus" class="input-ui">
-              <option value="">Select</option>
-              <option value="Valid">Valid</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Not Valid">Not Valid</option>
-              <option value="Expired">Expired</option>
-            </select>
-          </div>
-        </div>
-
-        <div><label class="muted mb-2 block text-sm font-semibold">Comment</label><input id="comment" class="input-ui"></div>
-
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label class="muted mb-2 block text-sm font-semibold">Contact Person</label><input id="contactPerson" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Contact Number</label><input id="contactNumber" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Email ID</label><input type="email" id="emailId" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Escalation Contact</label><input id="escalationContact" class="input-ui"></div>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label class="muted mb-2 block text-sm font-semibold">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Contract End Date</label><input type="date" id="contractEndDate" class="input-ui" readonly></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="input-ui" readonly></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Last Service Date</label><input type="date" id="lastServiceDate" onchange="updateNextServiceDueDate()" class="input-ui"></div>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label class="muted mb-2 block text-sm font-semibold">Contract Value (AED)</label><input type="number" step="0.01" id="contractValueAed" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Approved Budget (AED)</label><input type="number" step="0.01" id="approvedBudgetAed" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Payment Terms</label><input id="paymentTerms" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Invoice Status</label><input id="invoiceStatus" class="input-ui" placeholder="Under Accounts / Approval / etc."></div>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div><label class="muted mb-2 block text-sm font-semibold">SLA / KPI Status</label><input id="slaKpiStatus" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Next Service Due Date</label><input type="date" id="nextServiceDueDate" class="input-ui" readonly></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Certification / License Validity</label><input id="certificationValidity" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Risk Level</label>
-            <select id="riskLevel" class="input-ui">
-              <option value="">Select</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div><label class="muted mb-2 block text-sm font-semibold">PO / Agreement Reference</label><input id="poAgreementReference" class="input-ui"></div>
-          <div><label class="muted mb-2 block text-sm font-semibold">Issues / Non-Compliance Remarks</label><textarea id="issuesRemarks" rows="3" class="input-ui min-h-[110px]"></textarea></div>
-        </div>
-
-        <div class="sticky bottom-0 z-10 flex flex-col-reverse gap-3 border-t border-[var(--line)] bg-transparent pt-4 pb-1 sm:flex-row sm:justify-end">
-          <button type="button" onclick="closeModal()" class="rounded-2xl soft-block border px-5 py-3 font-semibold text-[var(--text)]">Cancel</button>
-          <button id="saveRecordButton" type="submit" class="rounded-2xl action-gradient px-5 py-3 font-bold text-white shadow-[0_12px_28px_rgba(59,130,246,0.24)]">Save Record</button>
-        </div>
-      </form>
+      <section id="settingsPage" class="hidden">
+        <div class="settings-grid"><div class="card"><div class="card-header"><div><div class="card-title">Cloud Sync Status</div><div class="card-subtitle">Supabase is built into this file. No project URL or key is required here.</div></div><div class="conn-badge" id="connBadge"><span class="dot"></span><span id="connBadgeText">Offline</span></div></div><div style="display:grid;gap:12px;"><div class="mini-card"><div class="mini-card-label">Signed-in account</div><div class="mini-card-value" id="settingsSignedInEmail" style="font-size:16px;word-break:break-word;">—</div></div><div class="mini-card"><div class="mini-card-label">Database table</div><div class="mini-card-value" style="font-size:16px;font-family:var(--mono);">ssp_amc_contracts</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"><button class="btn danger" id="logoutButton">Sign Out</button></div></div><div class="card"><div class="card-title" style="margin-bottom:10px;">Backup</div><div class="card-subtitle" style="margin-bottom:14px;">Export or import contract records. Import will replace online records.</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn success-btn" onclick="exportData()">↓ Export JSON Backup</button><label class="btn" style="cursor:pointer;">↑ Import JSON <input type="file" accept=".json" hidden onchange="handleImport(event)"></label><button class="btn" onclick="exportExcel()">↓ Excel</button></div><div class="card-title" style="margin:20px 0 10px;">Theme</div><div style="display:flex;gap:8px;"><button class="btn" id="themeLight" onclick="setTheme('light')">☀️ Light</button><button class="btn" id="themeDark" onclick="setTheme('dark')">🌙 Dark</button></div></div></div>
+      </section>
     </div>
   </div>
-
-  <div id="toast" class="fixed left-1/2 top-5 z-[90] hidden -translate-x-1/2">
-    <div class="panel rounded-2xl px-4 py-3 text-sm font-semibold" id="toastText"></div>
-  </div>
+</div>
+<button class="fab" onclick="openModal()">+</button>
+<div class="modal-backdrop hidden" id="modal"><div class="modal-box"><div class="modal-header"><div><div id="modalLabel" style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">New Entry</div><div class="modal-title" id="modalTitle">Create contract record</div></div><button class="icon-btn" onclick="closeModal()">✕</button></div><div class="modal-body"><form id="trackerForm"><input type="hidden" id="editId">
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Serial No.</label><input type="number" id="serialNo" class="field" placeholder="Auto generated" readonly></div><div class="form-group"><label class="form-label">Project Code</label><input id="projectCode" class="field"></div><div class="form-group"><label class="form-label">Project Site</label><input id="projectSite" class="field"></div><div class="form-group"><label class="form-label">Services</label><input required id="services" class="field"></div></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Frequency</label><select id="frequency" onchange="updateNextServiceDueDate()" class="field"><option value="">Select</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option><option value="Quarterly">Quarterly</option><option value="Semi Annual">Semi Annual</option><option value="Annual">Annual</option><option value="Bi Annual">Bi Annual</option><option value="2 Years">2 Years</option><option value="3 Years">3 Years</option></select></div><div class="form-group"><label class="form-label">Contractor Type</label><select id="contractorType" class="field"><option value="">Select</option><option value="External">External</option><option value="Internal">Internal</option><option value="In-House">In-House</option></select></div><div class="form-group"><label class="form-label">Contractors</label><input id="contractors" class="field"></div><div class="form-group"><label class="form-label">Contract Status</label><select id="contractStatus" class="field"><option value="">Select</option><option value="Valid">Valid</option><option value="In Progress">In Progress</option><option value="Not Valid">Not Valid</option><option value="Expired">Expired</option></select></div></div>
+  <div class="form-group" style="margin-bottom:16px;"><label class="form-label">Comment</label><input id="comment" class="field"></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contact Person</label><input id="contactPerson" class="field"></div><div class="form-group"><label class="form-label">Contact Number</label><input id="contactNumber" class="field"></div><div class="form-group"><label class="form-label">Email ID</label><input type="email" id="emailId" class="field"></div><div class="form-group"><label class="form-label">Escalation Contact</label><input id="escalationContact" class="field"></div></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="field"></div><div class="form-group"><label class="form-label">Contract Period</label><select id="contractPeriod" onchange="updateContractDates()" class="field"><option value="1" selected>1 Year</option><option value="2">2 Years</option><option value="3">3 Years</option><option value="4">4 Years</option><option value="5">5 Years</option></select></div><div class="form-group"><label class="form-label">Contract End Date</label><input type="date" id="contractEndDate" class="field" readonly></div><div class="form-group"><label class="form-label">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="field" readonly></div></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Last Service Date</label><input type="date" id="lastServiceDate" onchange="updateNextServiceDueDate()" class="field"></div></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Value (AED)</label><input type="number" step="0.01" id="contractValueAed" class="field"></div><div class="form-group"><label class="form-label">Approved Budget (AED)</label><input type="number" step="0.01" id="approvedBudgetAed" class="field"></div><div class="form-group"><label class="form-label">Payment Terms</label><input id="paymentTerms" class="field"></div><div class="form-group"><label class="form-label">Invoice Status</label><input id="invoiceStatus" class="field" placeholder="Under Accounts / Approval / etc."></div></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">SLA / KPI Status</label><input id="slaKpiStatus" class="field"></div><div class="form-group"><label class="form-label">Next Service Due Date</label><input type="date" id="nextServiceDueDate" class="field" readonly></div><div class="form-group"><label class="form-label">Certification / License Validity</label><input id="certificationValidity" class="field"></div><div class="form-group"><label class="form-label">Risk Level</label><select id="riskLevel" class="field"><option value="">Select</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div></div>
+  <div class="form-grid cols-2"><div class="form-group"><label class="form-label">PO / Agreement Reference</label><input id="poAgreementReference" class="field"></div><div class="form-group"><label class="form-label">Issues / Non-Compliance Remarks</label><textarea id="issuesRemarks" rows="3" class="field"></textarea></div></div>
+  <div class="modal-footer"><button type="button" onclick="closeModal()" class="btn">Cancel</button><button id="saveRecordButton" type="submit" class="btn primary">Save Record</button></div>
+</form></div></div></div>
+<div id="toast" class="toast"><span id="toastText"></span></div>
 
   <script>
     const SUPABASE_URL = 'https://irfryahjlvgfmbjmpdje.supabase.co';
@@ -512,17 +109,30 @@
 
     let records = [];
     let currentPage = 'dashboard';
-    let darkMode = JSON.parse(localStorage.getItem('ssp_amc_tracker_dark_mode') || 'false');
+    let darkMode = JSON.parse(localStorage.getItem('ssp_amc_tracker_dark_mode') || 'true');
     let currentUser = null;
 
     function applyTheme() {
       document.body.classList.toggle('dark-mode', darkMode);
+      const app = document.getElementById('appShell');
+      if (app) app.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+      const themeIcon = darkMode ? '☀️' : '🌙';
       const themeText = darkMode ? 'Light' : 'Dark';
-      const btn = document.getElementById('themeToggle');
-      const authBtn = document.getElementById('authThemeToggle');
-      if (btn) btn.textContent = themeText;
-      if (authBtn) authBtn.textContent = themeText;
+      ['themeToggle','authThemeToggle'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = id === 'themeToggle' ? themeIcon : 'Toggle Theme';
+      });
+      const lightBtn = document.getElementById('themeLight');
+      const darkBtn = document.getElementById('themeDark');
+      if (lightBtn) lightBtn.classList.toggle('primary', !darkMode);
+      if (darkBtn) darkBtn.classList.toggle('primary', darkMode);
       localStorage.setItem('ssp_amc_tracker_dark_mode', JSON.stringify(darkMode));
+    }
+
+    function setTheme(mode) {
+      darkMode = mode === 'dark';
+      applyTheme();
+      renderApp();
     }
 
     function toggleTheme() {
@@ -534,9 +144,9 @@
     function showToast(message) {
       const toast = document.getElementById('toast');
       document.getElementById('toastText').textContent = message;
-      toast.classList.remove('hidden');
+      toast.classList.add('show');
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.classList.add('hidden'), 2400);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 2400);
     }
 
     function showAuthScreen() {
@@ -549,16 +159,42 @@
       currentUser = user;
       document.getElementById('authScreen').classList.add('hidden');
       document.getElementById('appShell').classList.remove('hidden');
-      document.getElementById('userEmailDisplay').textContent = user?.email || '';
-      document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { dateStyle: 'medium' });
+      ['userEmailDisplay','userEmailSidebar','settingsSignedInEmail'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = user?.email || '';
+      });
+      const dateEl = document.getElementById('currentDate');
+      if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-GB', { dateStyle: 'medium' });
+      setConnectionStatus(true, 'Connected');
     }
 
     function switchPage(page) {
       currentPage = page;
-      document.getElementById('dashboardPage').classList.toggle('hidden', page !== 'dashboard');
-      document.getElementById('listPage').classList.toggle('hidden', page !== 'list');
-      document.getElementById('tabDashboard').classList.toggle('active', page === 'dashboard');
-      document.getElementById('tabList').classList.toggle('active', page === 'list');
+      document.getElementById('dashboardPage')?.classList.toggle('hidden', page !== 'dashboard');
+      document.getElementById('listPage')?.classList.toggle('hidden', page !== 'list');
+      document.getElementById('settingsPage')?.classList.toggle('hidden', page !== 'settings');
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === page));
+      const titles = {
+        dashboard: ['Dashboard', 'Contract overview, renewal watch, and tracker health'],
+        list: ['Contract List', 'Search, filter, edit, and export SSP / AMC records'],
+        settings: ['Settings & Sync', 'Supabase connection, backup, and theme controls']
+      };
+      const [title, sub] = titles[page] || titles.dashboard;
+      const titleEl = document.getElementById('topbarTitle');
+      const subEl = document.getElementById('topbarSub');
+      if (titleEl) titleEl.textContent = title;
+      if (subEl) subEl.textContent = sub;
+    }
+
+    function setConnectionStatus(isConnected, label) {
+      const dot = document.getElementById('syncDot');
+      const syncLabel = document.getElementById('syncLabel');
+      const badge = document.getElementById('connBadge');
+      const badgeText = document.getElementById('connBadgeText');
+      if (dot) dot.classList.toggle('connected', !!isConnected);
+      if (syncLabel) syncLabel.textContent = label || (isConnected ? 'Connected' : 'Not connected');
+      if (badge) badge.classList.toggle('live', !!isConnected);
+      if (badgeText) badgeText.textContent = label || (isConnected ? 'Online' : 'Offline');
     }
 
     function formatDate(value) {
@@ -623,8 +259,21 @@
       return `${year}-${month}-${day}`;
     }
 
+    function inferContractPeriodYears(startValue, endValue) {
+      if (!startValue || !endValue) return 1;
+      const startDate = new Date(startValue);
+      const endDate = new Date(endValue);
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
+
+      let years = endDate.getFullYear() - startDate.getFullYear();
+      const sameMonthAndDay = endDate.getMonth() === startDate.getMonth() && endDate.getDate() === startDate.getDate();
+      if (!sameMonthAndDay && years < 1) years = 1;
+      return Math.min(Math.max(years || 1, 1), 5);
+    }
+
     function updateContractDates() {
       const start = document.getElementById('contractStartDate')?.value;
+      const periodEl = document.getElementById('contractPeriod');
       const endEl = document.getElementById('contractEndDate');
       const reminderEl = document.getElementById('renewalReminderDate');
 
@@ -636,6 +285,7 @@
         return;
       }
 
+      const contractYears = Math.max(1, Number(periodEl?.value || 1));
       const endDate = new Date(start);
       if (isNaN(endDate.getTime())) {
         endEl.value = '';
@@ -643,7 +293,7 @@
         return;
       }
 
-      endDate.setFullYear(endDate.getFullYear() + 1);
+      endDate.setFullYear(endDate.getFullYear() + contractYears);
       endEl.value = toDateInputString(endDate);
 
       const reminderDate = new Date(endDate);
@@ -694,53 +344,50 @@
 
     function statusTone(status) {
       const value = (status || '').toLowerCase();
-      if (value === 'valid') return 'background:#dcfce7;color:#166534;border-color:#bbf7d0';
-      if (value === 'in progress') return 'background:#fff7ed;color:#c2410c;border-color:#fed7aa';
-      if (value === 'not valid' || value === 'expired') return 'background:#fee2e2;color:#b91c1c;border-color:#fecaca';
-      return 'background:#e0f2fe;color:#0369a1;border-color:#bae6fd';
+      if (value === 'valid') return 'badge-green';
+      if (value === 'in progress') return 'badge-amber';
+      if (value === 'not valid' || value === 'expired') return 'badge-red';
+      return 'badge-blue';
     }
 
     function riskTone(risk) {
       const value = (risk || '').toLowerCase();
-      if (value === 'high') return 'background:#fee2e2;color:#b91c1c;border-color:#fecaca';
-      if (value === 'medium') return 'background:#fff7ed;color:#c2410c;border-color:#fed7aa';
-      if (value === 'low') return 'background:#dcfce7;color:#166534;border-color:#bbf7d0';
-      return 'background:#e0f2fe;color:#0369a1;border-color:#bae6fd';
+      if (value === 'high') return 'badge-red';
+      if (value === 'medium') return 'badge-amber';
+      if (value === 'low') return 'badge-green';
+      return 'badge-gray';
     }
 
     function contractorTone(type) {
       const value = (type || '').toLowerCase();
-      if (value === 'internal' || value === 'in-house') return 'background:#ede9fe;color:#6d28d9;border-color:#ddd6fe';
-      return 'background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe';
+      if (value === 'internal' || value === 'in-house') return 'badge-purple';
+      return 'badge-blue';
     }
 
-    function renderStat(title, value, accentBg, accentText) {
+    function renderStat(title, value, colorClass, sub='Live') {
       return `
-        <div class="panel rounded-[24px] p-5">
-          <div class="mb-4 flex items-center justify-between">
-            <div class="rounded-2xl px-3 py-2 text-sm font-bold" style="background:${accentBg};color:${accentText}">●</div>
-            <span class="muted text-[11px] font-semibold uppercase tracking-[0.18em]">Live</span>
-          </div>
-          <div class="display-font text-3xl font-bold" style="color:${accentText}">${value}</div>
-          <div class="muted mt-1 text-sm">${title}</div>
+        <div class="stat-card ${colorClass}">
+          <div class="stat-label">${title}</div>
+          <div class="stat-value">${value}</div>
+          <div class="stat-sub">${sub}</div>
         </div>
       `;
     }
 
     function renderDashboard(stats) {
       document.getElementById('statsGrid').innerHTML = `
-        ${renderStat('Total Contracts', stats.total, '#eff6ff', '#1d4ed8')}
-        ${renderStat('Valid', stats.valid, '#dcfce7', '#166534')}
-        ${renderStat('In Progress', stats.progress, '#fff7ed', '#c2410c')}
-        ${renderStat('High Risk', stats.highRisk, '#fee2e2', '#b91c1c')}
-        ${renderStat('Contract Value', 'AED ' + currencyFormat(stats.value), '#e0f2fe', '#0369a1')}
+        ${renderStat('Total Contracts', stats.total, 'stat-blue', 'All SSP / AMC records')}
+        ${renderStat('Valid', stats.valid, 'stat-green', 'Currently active')}
+        ${renderStat('In Progress', stats.progress, 'stat-amber', 'Under processing')}
+        ${renderStat('High Risk', stats.highRisk, 'stat-red', 'Need attention')}
+        ${renderStat('Contract Value', 'AED ' + currencyFormat(stats.value), 'stat-cyan', 'Total value')}
       `;
 
       document.getElementById('overviewCards').innerHTML = `
-        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">External Contracts</div><div class="display-font mt-2 text-2xl font-bold">${stats.external}</div></div>
-        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">Internal / In-House</div><div class="display-font mt-2 text-2xl font-bold">${stats.internal}</div></div>
-        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">Upcoming Renewals (30d)</div><div class="display-font mt-2 text-2xl font-bold">${stats.upcoming}</div></div>
-        <div class="soft-block rounded-[22px] border p-4"><div class="muted text-[11px] font-bold uppercase tracking-[0.18em]">Under Accounts</div><div class="display-font mt-2 text-2xl font-bold">${stats.accounts}</div></div>
+        <div class="mini-card"><div class="mini-card-label">External Contracts</div><div class="mini-card-value">${stats.external}</div></div>
+        <div class="mini-card"><div class="mini-card-label">Internal / In-House</div><div class="mini-card-value">${stats.internal}</div></div>
+        <div class="mini-card"><div class="mini-card-label">Upcoming Renewals (30d)</div><div class="mini-card-value">${stats.upcoming}</div></div>
+        <div class="mini-card"><div class="mini-card-label">Under Accounts</div><div class="mini-card-value">${stats.accounts}</div></div>
       `;
 
       const upcoming = [...records]
@@ -750,30 +397,32 @@
         .slice(0, 6);
 
       document.getElementById('renewalList').innerHTML = upcoming.length ? upcoming.map(r => `
-        <div class="soft-block rounded-[20px] border p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="display-font text-lg font-bold">${r.services || 'NA'}</div>
-              <div class="muted mt-1 text-sm">${r.projectSite || ''} ${r.contractors ? '• ' + r.contractors : ''}</div>
+        <div class="recent-item">
+          <div class="recent-main">
+            <div class="recent-title">${r.services || 'NA'}</div>
+            <div class="recent-sub">${r.projectSite || 'No site'} ${r.contractors ? '• ' + r.contractors : ''}</div>
+            <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+              <span class="badge ${riskTone(r.riskLevel)}">${r.riskLevel || 'No Risk'}</span>
+              <span class="badge badge-gray">Renewal ${formatDate(r.renewalReminderDate || r.contractEndDate)}</span>
             </div>
-            <span class="chip" style="${statusTone(r.contractStatus)}">${r.contractStatus || 'NA'}</span>
           </div>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <span class="chip" style="${riskTone(r.riskLevel)}">${r.riskLevel || 'No Risk'}</span>
-            <span class="chip" style="background:#f8fafc;color:#334155;border-color:#e2e8f0">Renewal ${formatDate(r.renewalReminderDate || r.contractEndDate)}</span>
-          </div>
+          <span class="badge ${statusTone(r.contractStatus)}">${r.contractStatus || 'NA'}</span>
         </div>
-      `).join('') : `<div class="rounded-[20px] bg-slate-50 p-5 text-sm muted">No renewal dates available.</div>`;
+      `).join('') : `<div class="empty-state" style="padding:30px 10px;"><div class="icon">📅</div><p>No renewal dates available.</p></div>`;
+    }
+
+    function detailField(label, value, extra='') {
+      return `<div class="record-field ${extra}"><div class="record-label">${label}</div><div class="record-value ${value ? '' : 'muted'}">${value || 'NA'}</div></div>`;
     }
 
     function renderList(filtered, statusFilter) {
       const grid = document.getElementById('itemsGrid');
       if (!filtered.length) {
         grid.innerHTML = `
-          <div class="panel col-span-full rounded-[28px] p-12 text-center">
-            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-2xl">🔎</div>
-            <div class="display-font text-2xl font-bold">No records found</div>
-            <p class="muted mt-2 text-sm">Try a different search or add a new contract entry.</p>
+          <div class="card empty-state">
+            <div class="icon">🔎</div>
+            <div class="card-title" style="font-size:18px;">No records found</div>
+            <p>Try a different search or add a new contract entry.</p>
           </div>
         `;
         updateQuickButtons(statusFilter);
@@ -781,73 +430,46 @@
       }
 
       grid.innerHTML = filtered.map(r => `
-        <article class="panel fade-up rounded-[28px] overflow-hidden">
-          <div class="soft-block border-b px-5 py-4">
-            <div class="flex items-start justify-between gap-3 flex-wrap">
-              <div class="min-w-0">
-                <div class="muted mb-1 text-[11px] font-bold uppercase tracking-[0.18em]">Service</div>
-                <div class="display-font text-xl font-bold break-words">${r.services || 'NA'}</div>
-                <div class="muted mt-1 text-sm">${r.projectSite || 'NA'} ${r.projectCode ? '• ' + r.projectCode : ''}</div>
+        <article class="record-card">
+          <div class="record-card-header">
+            <div>
+              <div class="record-card-title">
+                <span class="record-mr">${r.services || 'NA'}</span>
+                <span class="badge ${contractorTone(r.contractorType)}">${r.contractorType || 'NA'}</span>
+                <span class="badge ${statusTone(r.contractStatus)}">${r.contractStatus || 'NA'}</span>
+                <span class="badge ${riskTone(r.riskLevel)}">${r.riskLevel || 'No Risk'}</span>
               </div>
-              <div class="flex gap-2 shrink-0">
-                <button onclick="editRecord('${r.id}')" class="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 ring-1 ring-slate-200">Edit</button>
-                <button onclick="deleteRecord('${r.id}')" class="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-rose-700 ring-1 ring-slate-200">Delete</button>
-              </div>
+              <div class="record-card-sub">${r.projectSite || 'NA'} ${r.projectCode ? '• ' + r.projectCode : ''} ${r.contractors ? '• ' + r.contractors : ''}</div>
+            </div>
+            <div class="record-card-actions">
+              <button onclick="editRecord('${r.id}')" class="btn sm">Edit</button>
+              <button onclick="deleteRecord('${r.id}')" class="btn sm danger">Delete</button>
             </div>
           </div>
-
-          <div class="p-5">
-            <div class="mb-4 flex flex-wrap gap-2">
-              <span class="chip" style="${contractorTone(r.contractorType)}">${r.contractorType || 'NA'}</span>
-              <span class="chip" style="${statusTone(r.contractStatus)}">${r.contractStatus || 'NA'}</span>
-              <span class="chip" style="${riskTone(r.riskLevel)}">${r.riskLevel || 'No Risk'}</span>
-            </div>
-
-            <div class="soft-block mb-4 rounded-[22px] border p-4">
-              <div class="muted mb-2 text-[11px] font-bold uppercase tracking-[0.18em]">Contractors & Contact</div>
-              <div class="text-sm leading-6 break-words">${r.contractors || 'NA'}${r.contactPerson ? ' • ' + r.contactPerson : ''}${r.contactNumber ? ' • ' + r.contactNumber : ''}</div>
-              <div class="muted mt-2 text-sm break-all">${r.emailId || ''}</div>
-            </div>
-
-            <div class="grid gap-3 xl:grid-cols-2">
-              <div class="soft-block rounded-[20px] border p-4">
-                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Timeline</div>
-                <div class="space-y-2 text-sm">
-                  <div class="flex justify-between gap-3"><span class="muted">Start Date</span><span>${formatDate(r.contractStartDate)}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">End Date</span><span>${formatDate(r.contractEndDate)}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">Last Service</span><span>${formatDate(r.lastServiceDate)}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">Renewal Reminder</span><span>${formatDate(r.renewalReminderDate)}</span></div>
-                </div>
-              </div>
-              <div class="soft-block rounded-[20px] border p-4">
-                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Commercials</div>
-                <div class="space-y-2 text-sm">
-                  <div class="flex justify-between gap-3"><span class="muted">Contract Value</span><span>AED ${currencyFormat(r.contractValueAed)}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">Approved Budget</span><span>AED ${currencyFormat(r.approvedBudgetAed)}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">Invoice Status</span><span class="text-right">${r.invoiceStatus || 'NA'}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">Payment Terms</span><span class="text-right">${r.paymentTerms || 'NA'}</span></div>
-                </div>
-              </div>
-              <div class="soft-block rounded-[20px] border p-4">
-                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Performance</div>
-                <div class="space-y-2 text-sm">
-                  <div class="flex justify-between gap-3"><span class="muted">SLA / KPI</span><span class="text-right">${r.slaKpiStatus || 'NA'}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">Next Service Due</span><span class="text-right">${r.nextServiceDueDate || 'NA'}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">License Validity</span><span class="text-right">${r.certificationValidity || 'NA'}</span></div>
-                </div>
-              </div>
-              <div class="soft-block rounded-[20px] border p-4">
-                <div class="muted mb-3 text-[11px] font-bold uppercase tracking-[0.18em]">Reference</div>
-                <div class="space-y-2 text-sm">
-                  <div class="flex justify-between gap-3"><span class="muted">PO / Agreement</span><span class="text-right break-all">${r.poAgreementReference || 'NA'}</span></div>
-                  <div class="flex justify-between gap-3"><span class="muted">Escalation</span><span class="text-right">${r.escalationContact || 'NA'}</span></div>
-                </div>
-              </div>
-            </div>
-
-            ${r.comment ? `<div class="soft-block mt-4 rounded-[20px] border p-4"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">Comment</div><p class="text-sm">${r.comment}</p></div>` : ''}
-            ${r.issuesRemarks ? `<div class="soft-block mt-4 rounded-[20px] border p-4"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">Issues / Non-Compliance</div><p class="text-sm">${r.issuesRemarks}</p></div>` : ''}
+          <div class="record-details-grid">
+            ${detailField('Serial No.', r.serialNo)}
+            ${detailField('Contractor', r.contractors)}
+            ${detailField('Contact Person', r.contactPerson)}
+            ${detailField('Contact No.', r.contactNumber)}
+            ${detailField('Email ID', r.emailId)}
+            ${detailField('Start Date', formatDate(r.contractStartDate))}
+            ${detailField('End Date', formatDate(r.contractEndDate))}
+            ${detailField('Contract Period', inferContractPeriodYears(r.contractStartDate, r.contractEndDate) + ' Year' + (inferContractPeriodYears(r.contractStartDate, r.contractEndDate) > 1 ? 's' : ''))}
+            ${detailField('Renewal Reminder', formatDate(r.renewalReminderDate))}
+            ${detailField('Frequency', r.frequency)}
+            ${detailField('Last Service', formatDate(r.lastServiceDate))}
+            ${detailField('Next Service Due', formatDate(r.nextServiceDueDate))}
+            ${detailField('SLA / KPI', r.slaKpiStatus)}
+            ${detailField('Contract Value', 'AED ' + currencyFormat(r.contractValueAed))}
+            ${detailField('Approved Budget', 'AED ' + currencyFormat(r.approvedBudgetAed))}
+            ${detailField('Payment Terms', r.paymentTerms)}
+            ${detailField('Invoice Status', r.invoiceStatus)}
+            ${detailField('License Validity', r.certificationValidity)}
+            ${detailField('PO / Agreement', r.poAgreementReference)}
+            ${detailField('Escalation', r.escalationContact)}
           </div>
+          ${r.comment ? `<div class="record-material"><div class="record-label">Comment</div><div class="record-value">${r.comment}</div></div>` : ''}
+          ${r.issuesRemarks ? `<div class="record-material"><div class="record-label">Issues / Non-Compliance</div><div class="record-value">${r.issuesRemarks}</div></div>` : ''}
         </article>
       `).join('');
 
@@ -904,14 +526,13 @@
     }
 
     function updateQuickButtons(statusFilter) {
-      const base = 'soft-block rounded-2xl border px-4 py-4 text-left';
       ['quickAll','quickValid','quickProgress'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.className = base;
+        if (el) el.classList.remove('active');
       });
-      if (statusFilter === 'All') document.getElementById('quickAll').className = base + ' ring-2 ring-blue-200 soft-block';
-      if (statusFilter === 'Valid') document.getElementById('quickValid').className = base + ' ring-2 ring-emerald-200 bg-emerald-50';
-      if (statusFilter === 'In Progress') document.getElementById('quickProgress').className = base + ' ring-2 ring-amber-200 bg-amber-50';
+      if (statusFilter === 'All') document.getElementById('quickAll')?.classList.add('active');
+      if (statusFilter === 'Valid') document.getElementById('quickValid')?.classList.add('active');
+      if (statusFilter === 'In Progress') document.getElementById('quickProgress')?.classList.add('active');
     }
 
     function quickStatus(status) {
@@ -934,14 +555,16 @@
       document.getElementById('trackerForm').reset();
       document.getElementById('editId').value = '';
       document.getElementById('serialNo').value = getNextSerialNo();
+      const periodEl = document.getElementById('contractPeriod');
+      if (periodEl) periodEl.value = '1';
       document.getElementById('modalLabel').textContent = 'New entry';
       document.getElementById('modalTitle').textContent = 'Create contract record';
       document.getElementById('saveRecordButton').disabled = false;
       document.getElementById('saveRecordButton').textContent = 'Save Record';
       updateContractDates();
       updateNextServiceDueDate();
+      document.getElementById('modal').classList.add('open');
       document.getElementById('modal').classList.remove('hidden');
-      document.getElementById('modal').classList.add('flex');
     }
 
     function closeModal() {
@@ -950,8 +573,8 @@
       document.getElementById('serialNo').value = '';
       document.getElementById('saveRecordButton').disabled = false;
       document.getElementById('saveRecordButton').textContent = 'Save Record';
+      document.getElementById('modal').classList.remove('open');
       document.getElementById('modal').classList.add('hidden');
-      document.getElementById('modal').classList.remove('flex');
     }
 
     function editRecord(id) {
@@ -972,6 +595,8 @@
       document.getElementById('emailId').value = r.emailId || '';
       document.getElementById('contractStartDate').value = formatDateInputValue(r.contractStartDate);
       document.getElementById('contractEndDate').value = formatDateInputValue(r.contractEndDate);
+      const periodEl = document.getElementById('contractPeriod');
+      if (periodEl) periodEl.value = String(inferContractPeriodYears(r.contractStartDate, r.contractEndDate));
       document.getElementById('contractValueAed').value = r.contractValueAed || '';
       document.getElementById('approvedBudgetAed').value = r.approvedBudgetAed || '';
       document.getElementById('paymentTerms').value = r.paymentTerms || '';
@@ -991,8 +616,8 @@
       document.getElementById('saveRecordButton').textContent = 'Save Record';
       updateContractDates();
       updateNextServiceDueDate();
+      document.getElementById('modal').classList.add('open');
       document.getElementById('modal').classList.remove('hidden');
-      document.getElementById('modal').classList.add('flex');
     }
 
     function mapRowToRecord(row) {
@@ -1085,12 +710,38 @@
           return;
         }
 
+        records = records.filter(r => String(r.id) !== String(id));
+        renderApp();
         closeModal();
-        await loadRecordsFromSupabase();
         showToast('Record deleted');
       } catch (err) {
         console.error('Delete exception:', err);
         showToast('Delete failed');
+      }
+    }
+
+    async function signupSupabase() {
+      const button = document.getElementById('createAccountButton');
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!email || !password) {
+        showToast('Enter email and password first');
+        return;
+      }
+      if (password.length < 6) {
+        showToast('Password must be at least 6 characters');
+        return;
+      }
+      try {
+        if (button) { button.disabled = true; button.textContent = 'Creating...'; }
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) throw error;
+        showToast('Account created. Check email if confirmation is enabled.');
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Account creation failed');
+      } finally {
+        if (button) { button.disabled = false; button.textContent = 'Create Account'; }
       }
     }
 
@@ -1135,6 +786,9 @@
       e.preventDefault();
       const saveBtn = document.getElementById('saveRecordButton');
 
+      updateContractDates();
+      updateNextServiceDueDate();
+
       const payload = {
         serial_no: document.getElementById('serialNo').value ? Number(document.getElementById('serialNo').value) : null,
         project_code: document.getElementById('projectCode').value.trim(),
@@ -1155,7 +809,7 @@
         payment_terms: document.getElementById('paymentTerms').value.trim(),
         sla_kpi_status: document.getElementById('slaKpiStatus').value.trim(),
         last_service_date: document.getElementById('lastServiceDate').value || null,
-        next_service_due_date: document.getElementById('nextServiceDueDate').value.trim(),
+        next_service_due_date: document.getElementById('nextServiceDueDate').value || null,
         certification_license_validity: document.getElementById('certificationValidity').value.trim(),
         issues_non_compliance_remarks: document.getElementById('issuesRemarks').value.trim(),
         risk_level: document.getElementById('riskLevel').value,
@@ -1165,45 +819,21 @@
         renewal_reminder_date: document.getElementById('renewalReminderDate').value || null
       };
 
-      if (!payload.services) {
-        showToast('Services is required');
-        return;
-      }
-
-      if (!payload.contract_start_date) {
-        showToast('Contract Start Date is required');
-        return;
-      }
-
-      if (!payload.contract_end_date) {
-        showToast('Contract End Date could not be calculated');
-        return;
-      }
-
-      if (!payload.last_service_date) {
-        showToast('Last Service Date is required');
-        return;
-      }
-
-      if (!payload.frequency) {
-        showToast('Frequency is required');
-        return;
-      }
-
-      if (!payload.next_service_due_date) {
-        showToast('Next Service Due Date could not be calculated');
-        return;
-      }
-
-      if (!payload.serial_no) {
-        payload.serial_no = getNextSerialNo();
-      }
+      if (!payload.services) return showToast('Services is required');
+      if (!payload.frequency) return showToast('Frequency is required');
+      if (!payload.contract_start_date) return showToast('Contract Start Date is required');
+      if (!payload.contract_end_date) return showToast('Contract End Date could not be calculated');
+      if (!payload.last_service_date) return showToast('Last Service Date is required');
+      if (!payload.next_service_due_date) return showToast('Next Service Due Date could not be calculated');
+      if (!payload.serial_no) payload.serial_no = getNextSerialNo();
 
       try {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
+        setConnectionStatus(true, 'Syncing...');
 
         const id = document.getElementById('editId').value;
+        let savedRows = [];
 
         if (id) {
           const { data, error } = await supabaseClient
@@ -1213,7 +843,10 @@
             .select();
 
           if (error) throw error;
-          if (!data || data.length === 0) throw new Error('Update did not return any row');
+          if (!data || data.length === 0) throw new Error('Update did not return any row. Please check Supabase RLS / table permission.');
+          savedRows = data;
+          const updatedRecord = mapRowToRecord(savedRows[0]);
+          records = records.map(r => String(r.id) === String(updatedRecord.id) ? updatedRecord : r);
           showToast('Record updated');
         } else {
           const { data, error } = await supabaseClient
@@ -1222,14 +855,18 @@
             .select();
 
           if (error) throw error;
-          if (!data || data.length === 0) throw new Error('Insert did not return any row');
+          if (!data || data.length === 0) throw new Error('Insert did not return any row. Please check Supabase RLS / table permission.');
+          savedRows = data;
+          records = [mapRowToRecord(savedRows[0]), ...records];
           showToast('Record added');
         }
 
         closeModal();
-        await loadRecordsFromSupabase();
+        renderApp();
+        setConnectionStatus(true, 'Connected');
       } catch (err) {
         console.error(err);
+        setConnectionStatus(false, 'Save failed');
         showToast(err.message || 'Record save failed');
       } finally {
         saveBtn.disabled = false;
@@ -1376,10 +1013,12 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       applyTheme();
-      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-      document.getElementById('authThemeToggle').addEventListener('click', toggleTheme);
-      document.getElementById('loginForm').addEventListener('submit', handleLogin);
-      document.getElementById('logoutButton').addEventListener('click', handleLogout);
+      document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+      document.getElementById('authThemeToggle')?.addEventListener('click', toggleTheme);
+      document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+      document.getElementById('logoutButton')?.addEventListener('click', handleLogout);
+      document.getElementById('createAccountButton')?.addEventListener('click', signupSupabase);
+      document.querySelectorAll('.nav-btn[data-view]').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.view)));
 
       const { data: { session } } = await supabaseClient.auth.getSession();
       await handleSessionChange(session);
@@ -1389,5 +1028,6 @@
       });
     });
   </script>
+
 </body>
 </html>
