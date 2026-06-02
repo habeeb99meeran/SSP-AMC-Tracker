@@ -54,7 +54,7 @@
   <div class="main">
     <div class="topbar">
       <div><div class="page-title" id="topbarTitle">Dashboard</div><div class="page-subtitle" id="topbarSub">Contract overview, renewal watch, and tracker health</div></div>
-      <div class="topbar-actions"><button class="icon-btn" id="themeToggle" title="Toggle theme">🌙</button><button class="btn sm" onclick="exportExcel()">↓ Excel</button><button class="btn sm" onclick="exportData()">↓ JSON</button><label class="btn sm" style="cursor:pointer;">↑ Import <input type="file" id="importFile" accept=".json" hidden onchange="handleImport(event)"></label><button class="btn primary" onclick="openModal()">+ Add Contract</button></div>
+      <div class="topbar-actions"><button class="icon-btn" id="themeToggle" title="Toggle theme">🌙</button><button class="btn sm" onclick="loadRecordsFromSupabase()">↻ Refresh</button><button class="btn sm" onclick="exportExcel()">↓ Excel</button><button class="btn sm" onclick="exportData()">↓ JSON</button><label class="btn sm" style="cursor:pointer;">↑ Import <input type="file" id="importFile" accept=".json" hidden onchange="handleImport(event)"></label><button class="btn primary" onclick="openModal()">+ Add Contract</button></div>
     </div>
     <div class="content">
       <section id="dashboardPage">
@@ -83,8 +83,7 @@
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Frequency</label><select id="frequency" onchange="updateNextServiceDueDate()" class="field"><option value="">Select</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option><option value="Quarterly">Quarterly</option><option value="Semi Annual">Semi Annual</option><option value="Annual">Annual</option><option value="Bi Annual">Bi Annual</option><option value="2 Years">2 Years</option><option value="3 Years">3 Years</option></select></div><div class="form-group"><label class="form-label">Contractor Type</label><select id="contractorType" class="field"><option value="">Select</option><option value="External">External</option><option value="Internal">Internal</option><option value="In-House">In-House</option></select></div><div class="form-group"><label class="form-label">Contractors</label><input id="contractors" class="field"></div><div class="form-group"><label class="form-label">Contract Status</label><select id="contractStatus" class="field"><option value="">Select</option><option value="Valid">Valid</option><option value="In Progress">In Progress</option><option value="Not Valid">Not Valid</option><option value="Expired">Expired</option></select></div></div>
   <div class="form-group" style="margin-bottom:16px;"><label class="form-label">Comment</label><input id="comment" class="field"></div>
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contact Person</label><input id="contactPerson" class="field"></div><div class="form-group"><label class="form-label">Contact Number</label><input id="contactNumber" class="field"></div><div class="form-group"><label class="form-label">Email ID</label><input type="email" id="emailId" class="field"></div><div class="form-group"><label class="form-label">Escalation Contact</label><input id="escalationContact" class="field"></div></div>
-  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="field"></div><div class="form-group"><label class="form-label">Contract Period</label><select id="contractPeriod" onchange="updateContractDates()" class="field"><option value="1" selected>1 Year</option><option value="2">2 Years</option><option value="3">3 Years</option><option value="4">4 Years</option><option value="5">5 Years</option></select></div><div class="form-group"><label class="form-label">Contract End Date</label><input type="date" id="contractEndDate" class="field" readonly></div><div class="form-group"><label class="form-label">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="field" readonly></div></div>
-  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Last Service Date</label><input type="date" id="lastServiceDate" onchange="updateNextServiceDueDate()" class="field"></div></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="field"></div><div class="form-group"><label class="form-label">Contract Period</label><select id="contractPeriodYears" onchange="updateContractDates()" class="field"><option value="1">1 Year</option><option value="2">2 Years</option><option value="3">3 Years</option><option value="4">4 Years</option><option value="5">5 Years</option></select></div><div class="form-group"><label class="form-label">Contract End Date</label><input type="date" id="contractEndDate" class="field" readonly></div><div class="form-group"><label class="form-label">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="field" readonly></div><div class="form-group"><label class="form-label">Last Service Date</label><input type="date" id="lastServiceDate" onchange="updateNextServiceDueDate()" class="field"></div></div>
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Value (AED)</label><input type="number" step="0.01" id="contractValueAed" class="field"></div><div class="form-group"><label class="form-label">Approved Budget (AED)</label><input type="number" step="0.01" id="approvedBudgetAed" class="field"></div><div class="form-group"><label class="form-label">Payment Terms</label><input id="paymentTerms" class="field"></div><div class="form-group"><label class="form-label">Invoice Status</label><input id="invoiceStatus" class="field" placeholder="Under Accounts / Approval / etc."></div></div>
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">SLA / KPI Status</label><input id="slaKpiStatus" class="field"></div><div class="form-group"><label class="form-label">Next Service Due Date</label><input type="date" id="nextServiceDueDate" class="field" readonly></div><div class="form-group"><label class="form-label">Certification / License Validity</label><input id="certificationValidity" class="field"></div><div class="form-group"><label class="form-label">Risk Level</label><select id="riskLevel" class="field"><option value="">Select</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div></div>
   <div class="form-grid cols-2"><div class="form-group"><label class="form-label">PO / Agreement Reference</label><input id="poAgreementReference" class="field"></div><div class="form-group"><label class="form-label">Issues / Non-Compliance Remarks</label><textarea id="issuesRemarks" rows="3" class="field"></textarea></div></div>
@@ -99,11 +98,9 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: {
-        storage: {
-          getItem: (key) => sessionStorage.getItem(key),
-          setItem: (key, value) => sessionStorage.setItem(key, value),
-          removeItem: (key) => sessionStorage.removeItem(key)
-        }
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false
       }
     });
 
@@ -150,31 +147,22 @@
     }
 
     function showAuthScreen() {
-      const auth = document.getElementById('authScreen');
-      const app = document.getElementById('appShell');
-      if (auth) { auth.classList.remove('hidden'); auth.style.display = 'flex'; }
-      if (app) { app.classList.add('hidden'); app.style.display = 'none'; }
+      document.getElementById('authScreen').classList.remove('hidden');
+      document.getElementById('appShell').classList.add('hidden');
       currentUser = null;
     }
 
     function showAppScreen(user) {
-      currentUser = user || currentUser || { email: '' };
-      const auth = document.getElementById('authScreen');
-      const app = document.getElementById('appShell');
-
-      // Force the screen switch with both class and inline display.
-      // This makes GitHub Pages/browser cache/storage behaviour less likely to leave the login page visible.
-      if (auth) { auth.classList.add('hidden'); auth.style.display = 'none'; }
-      if (app) { app.classList.remove('hidden'); app.style.display = 'grid'; }
-
+      currentUser = user;
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('appShell').classList.remove('hidden');
       ['userEmailDisplay','userEmailSidebar','settingsSignedInEmail'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.textContent = currentUser?.email || '';
+        if (el) el.textContent = user?.email || '';
       });
       const dateEl = document.getElementById('currentDate');
       if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-GB', { dateStyle: 'medium' });
       setConnectionStatus(true, 'Connected');
-      switchPage(currentPage || 'dashboard');
     }
 
     function switchPage(page) {
@@ -268,21 +256,8 @@
       return `${year}-${month}-${day}`;
     }
 
-    function inferContractPeriodYears(startValue, endValue) {
-      if (!startValue || !endValue) return 1;
-      const startDate = new Date(startValue);
-      const endDate = new Date(endValue);
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
-
-      let years = endDate.getFullYear() - startDate.getFullYear();
-      const sameMonthAndDay = endDate.getMonth() === startDate.getMonth() && endDate.getDate() === startDate.getDate();
-      if (!sameMonthAndDay && years < 1) years = 1;
-      return Math.min(Math.max(years || 1, 1), 5);
-    }
-
     function updateContractDates() {
       const start = document.getElementById('contractStartDate')?.value;
-      const periodEl = document.getElementById('contractPeriod');
       const endEl = document.getElementById('contractEndDate');
       const reminderEl = document.getElementById('renewalReminderDate');
 
@@ -294,7 +269,6 @@
         return;
       }
 
-      const contractYears = Math.max(1, Number(periodEl?.value || 1));
       const endDate = new Date(start);
       if (isNaN(endDate.getTime())) {
         endEl.value = '';
@@ -302,7 +276,8 @@
         return;
       }
 
-      endDate.setFullYear(endDate.getFullYear() + contractYears);
+      const periodYears = Number(document.getElementById('contractPeriodYears')?.value || 1);
+      endDate.setFullYear(endDate.getFullYear() + (Number.isFinite(periodYears) && periodYears > 0 ? periodYears : 1));
       endEl.value = toDateInputString(endDate);
 
       const reminderDate = new Date(endDate);
@@ -462,8 +437,8 @@
             ${detailField('Contact No.', r.contactNumber)}
             ${detailField('Email ID', r.emailId)}
             ${detailField('Start Date', formatDate(r.contractStartDate))}
+            ${detailField('Contract Period', r.contractStartDate && r.contractEndDate ? Math.max(1, Math.round((new Date(r.contractEndDate) - new Date(r.contractStartDate)) / (365.25 * 24 * 60 * 60 * 1000))) + ' Year(s)' : 'NA')}
             ${detailField('End Date', formatDate(r.contractEndDate))}
-            ${detailField('Contract Period', inferContractPeriodYears(r.contractStartDate, r.contractEndDate) + ' Year' + (inferContractPeriodYears(r.contractStartDate, r.contractEndDate) > 1 ? 's' : ''))}
             ${detailField('Renewal Reminder', formatDate(r.renewalReminderDate))}
             ${detailField('Frequency', r.frequency)}
             ${detailField('Last Service', formatDate(r.lastServiceDate))}
@@ -564,8 +539,6 @@
       document.getElementById('trackerForm').reset();
       document.getElementById('editId').value = '';
       document.getElementById('serialNo').value = getNextSerialNo();
-      const periodEl = document.getElementById('contractPeriod');
-      if (periodEl) periodEl.value = '1';
       document.getElementById('modalLabel').textContent = 'New entry';
       document.getElementById('modalTitle').textContent = 'Create contract record';
       document.getElementById('saveRecordButton').disabled = false;
@@ -603,9 +576,14 @@
       document.getElementById('contactNumber').value = r.contactNumber || '';
       document.getElementById('emailId').value = r.emailId || '';
       document.getElementById('contractStartDate').value = formatDateInputValue(r.contractStartDate);
+      const periodEl = document.getElementById('contractPeriodYears');
+      if (periodEl) {
+        const s = new Date(r.contractStartDate);
+        const e = new Date(r.contractEndDate);
+        const diffYears = (!isNaN(s.getTime()) && !isNaN(e.getTime())) ? Math.max(1, Math.round((e - s) / (365.25 * 24 * 60 * 60 * 1000))) : 1;
+        periodEl.value = String(Math.min(5, Math.max(1, diffYears)));
+      }
       document.getElementById('contractEndDate').value = formatDateInputValue(r.contractEndDate);
-      const periodEl = document.getElementById('contractPeriod');
-      if (periodEl) periodEl.value = String(inferContractPeriodYears(r.contractStartDate, r.contractEndDate));
       document.getElementById('contractValueAed').value = r.contractValueAed || '';
       document.getElementById('approvedBudgetAed').value = r.approvedBudgetAed || '';
       document.getElementById('paymentTerms').value = r.paymentTerms || '';
@@ -663,20 +641,66 @@
       };
     }
 
-    async function loadRecordsFromSupabase() {
-      const { data, error } = await supabaseClient
-        .from(TABLE_NAME)
-        .select('*')
-        .order('created_at', { ascending: false });
+    async function loadRecordsFromSupabase(activeSession = null) {
+      try {
+        setConnectionStatus(true, 'Loading records...');
 
-      if (error) {
-        console.error(error);
-        showToast(error.message || 'Failed to load records');
-        return;
+        // Use the current Supabase session first. On GitHub Pages / some browsers,
+        // auth storage can be slow to update immediately after login, so this also
+        // accepts the fresh session returned by signInWithPassword.
+        let session = activeSession;
+        if (!session) {
+          const { data: sessionData } = await supabaseClient.auth.getSession();
+          session = sessionData?.session || null;
+        }
+
+        let queryClient = supabaseClient;
+
+        // Strong fallback: create a temporary DB client with the fresh Bearer token.
+        // This avoids the "login succeeded but select returned nothing" issue caused
+        // by delayed/blocked browser storage on hosted GitHub Pages.
+        if (session?.access_token) {
+          queryClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+            global: {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
+            },
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+              detectSessionInUrl: false
+            }
+          });
+        }
+
+        const { data, error, status } = await queryClient
+          .from(TABLE_NAME)
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Load records error:', { error, status });
+          records = [];
+          renderApp();
+          setConnectionStatus(false, 'Load failed');
+          showToast(error.message || 'Failed to load records. Check RLS / SELECT policy.');
+          return false;
+        }
+
+        records = (data || []).map(mapRowToRecord);
+        renderApp();
+        setConnectionStatus(true, `Connected • ${records.length} records`);
+        if (!records.length) showToast('Login successful, but no records were returned from Supabase');
+        return true;
+      } catch (err) {
+        console.error('Load records exception:', err);
+        records = [];
+        renderApp();
+        setConnectionStatus(false, 'Load failed');
+        showToast(err.message || 'Failed to load records');
+        return false;
       }
-
-      records = (data || []).map(mapRowToRecord);
-      renderApp();
     }
 
     async function deleteRecord(id) {
@@ -760,38 +784,47 @@
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
 
-      if (!email || !password) {
-        showToast('Enter email and password');
-        return;
-      }
-
       button.disabled = true;
       button.textContent = 'Signing In...';
+      setConnectionStatus(true, 'Signing in...');
 
       try {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
         if (error) {
-          console.error(error);
+          console.error('Login error:', error);
           showToast(error.message || 'Login failed');
+          setConnectionStatus(false, 'Login failed');
           return;
         }
 
-        document.getElementById('loginForm').reset();
-        sessionStorage.setItem('ssp_amc_last_login_ok', '1');
+        const session = data?.session || null;
+        const user = data?.user || session?.user || null;
 
-        // Do not wait for the auth listener. Login already succeeded, so open the app immediately.
-        showAppScreen(data?.user || data?.session?.user || { email });
+        if (!user) {
+          showToast('Login completed, but user session was not returned');
+          setConnectionStatus(false, 'Session missing');
+          return;
+        }
+
+        // Force the app screen open immediately after successful password login.
+        // Then load records using the fresh session token directly.
+        document.getElementById('loginForm').reset();
+        showAppScreen(user);
         showToast('Login successful');
 
-        try {
-          await loadRecordsFromSupabase();
-          setConnectionStatus(true, 'Connected');
-        } catch (loadErr) {
-          console.error('Record load after login failed:', loadErr);
-          setConnectionStatus(false, 'Load failed');
-          showToast(loadErr.message || 'Signed in, but records could not load');
+        if (session?.access_token && session?.refresh_token) {
+          await supabaseClient.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+          });
         }
+
+        await loadRecordsFromSupabase(session);
+      } catch (err) {
+        console.error('Login exception:', err);
+        showToast(err.message || 'Login failed');
+        setConnectionStatus(false, 'Login failed');
       } finally {
         button.disabled = false;
         button.textContent = 'Sign In';
@@ -806,7 +839,6 @@
         return;
       }
       records = [];
-      sessionStorage.removeItem('ssp_amc_last_login_ok');
       renderApp();
       showAuthScreen();
       showToast('Signed out');
@@ -1032,24 +1064,14 @@
       event.target.value = '';
     }
 
-    async function handleSessionChange(session, eventName = '') {
+    async function handleSessionChange(session) {
+      // Do not let a delayed null INITIAL_SESSION event hide the app after a manual login.
       if (!session?.user) {
-        // Only hide the app on a real sign-out. This prevents a delayed INITIAL_SESSION/null
-        // event from putting the user back on the login page immediately after successful sign-in.
-        if (eventName === 'SIGNED_OUT' || !sessionStorage.getItem('ssp_amc_last_login_ok')) {
-          showAuthScreen();
-        }
+        if (!currentUser) showAuthScreen();
         return;
       }
-      sessionStorage.setItem('ssp_amc_last_login_ok', '1');
       showAppScreen(session.user);
-      try {
-        await loadRecordsFromSupabase();
-        setConnectionStatus(true, 'Connected');
-      } catch (err) {
-        console.error('Session record load failed:', err);
-        setConnectionStatus(false, 'Load failed');
-      }
+      await loadRecordsFromSupabase(session);
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -1063,14 +1085,14 @@
 
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        await handleSessionChange(session, 'INITIAL_SESSION');
+        await handleSessionChange(session);
       } catch (err) {
-        console.error('Initial session check failed:', err);
+        console.error('Session check failed:', err);
         showAuthScreen();
       }
 
-      supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        await handleSessionChange(session, event);
+      supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+        await handleSessionChange(session);
       });
     });
   </script>
