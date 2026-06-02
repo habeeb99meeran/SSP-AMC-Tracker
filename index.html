@@ -83,8 +83,7 @@
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Frequency</label><select id="frequency" onchange="updateNextServiceDueDate()" class="field"><option value="">Select</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option><option value="Quarterly">Quarterly</option><option value="Semi Annual">Semi Annual</option><option value="Annual">Annual</option><option value="Bi Annual">Bi Annual</option><option value="2 Years">2 Years</option><option value="3 Years">3 Years</option></select></div><div class="form-group"><label class="form-label">Contractor Type</label><select id="contractorType" class="field"><option value="">Select</option><option value="External">External</option><option value="Internal">Internal</option><option value="In-House">In-House</option></select></div><div class="form-group"><label class="form-label">Contractors</label><input id="contractors" class="field"></div><div class="form-group"><label class="form-label">Contract Status</label><select id="contractStatus" class="field"><option value="">Select</option><option value="Valid">Valid</option><option value="In Progress">In Progress</option><option value="Not Valid">Not Valid</option><option value="Expired">Expired</option></select></div></div>
   <div class="form-group" style="margin-bottom:16px;"><label class="form-label">Comment</label><input id="comment" class="field"></div>
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contact Person</label><input id="contactPerson" class="field"></div><div class="form-group"><label class="form-label">Contact Number</label><input id="contactNumber" class="field"></div><div class="form-group"><label class="form-label">Email ID</label><input type="email" id="emailId" class="field"></div><div class="form-group"><label class="form-label">Escalation Contact</label><input id="escalationContact" class="field"></div></div>
-  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="field"></div><div class="form-group"><label class="form-label">Contract Period</label><select id="contractPeriod" onchange="updateContractDates()" class="field"><option value="1" selected>1 Year</option><option value="2">2 Years</option><option value="3">3 Years</option><option value="4">4 Years</option><option value="5">5 Years</option></select></div><div class="form-group"><label class="form-label">Contract End Date</label><input type="date" id="contractEndDate" class="field" readonly></div><div class="form-group"><label class="form-label">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="field" readonly></div></div>
-  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Last Service Date</label><input type="date" id="lastServiceDate" onchange="updateNextServiceDueDate()" class="field"></div></div>
+  <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Start Date</label><input type="date" id="contractStartDate" onchange="updateContractDates()" class="field"></div><div class="form-group"><label class="form-label">Contract End Date</label><input type="date" id="contractEndDate" class="field" readonly></div><div class="form-group"><label class="form-label">Renewal Reminder Date</label><input type="date" id="renewalReminderDate" class="field" readonly></div><div class="form-group"><label class="form-label">Last Service Date</label><input type="date" id="lastServiceDate" onchange="updateNextServiceDueDate()" class="field"></div></div>
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">Contract Value (AED)</label><input type="number" step="0.01" id="contractValueAed" class="field"></div><div class="form-group"><label class="form-label">Approved Budget (AED)</label><input type="number" step="0.01" id="approvedBudgetAed" class="field"></div><div class="form-group"><label class="form-label">Payment Terms</label><input id="paymentTerms" class="field"></div><div class="form-group"><label class="form-label">Invoice Status</label><input id="invoiceStatus" class="field" placeholder="Under Accounts / Approval / etc."></div></div>
   <div class="form-grid cols-4" style="margin-bottom:16px;"><div class="form-group"><label class="form-label">SLA / KPI Status</label><input id="slaKpiStatus" class="field"></div><div class="form-group"><label class="form-label">Next Service Due Date</label><input type="date" id="nextServiceDueDate" class="field" readonly></div><div class="form-group"><label class="form-label">Certification / License Validity</label><input id="certificationValidity" class="field"></div><div class="form-group"><label class="form-label">Risk Level</label><select id="riskLevel" class="field"><option value="">Select</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div></div>
   <div class="form-grid cols-2"><div class="form-group"><label class="form-label">PO / Agreement Reference</label><input id="poAgreementReference" class="field"></div><div class="form-group"><label class="form-label">Issues / Non-Compliance Remarks</label><textarea id="issuesRemarks" rows="3" class="field"></textarea></div></div>
@@ -259,21 +258,8 @@
       return `${year}-${month}-${day}`;
     }
 
-    function inferContractPeriodYears(startValue, endValue) {
-      if (!startValue || !endValue) return 1;
-      const startDate = new Date(startValue);
-      const endDate = new Date(endValue);
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
-
-      let years = endDate.getFullYear() - startDate.getFullYear();
-      const sameMonthAndDay = endDate.getMonth() === startDate.getMonth() && endDate.getDate() === startDate.getDate();
-      if (!sameMonthAndDay && years < 1) years = 1;
-      return Math.min(Math.max(years || 1, 1), 5);
-    }
-
     function updateContractDates() {
       const start = document.getElementById('contractStartDate')?.value;
-      const periodEl = document.getElementById('contractPeriod');
       const endEl = document.getElementById('contractEndDate');
       const reminderEl = document.getElementById('renewalReminderDate');
 
@@ -285,7 +271,6 @@
         return;
       }
 
-      const contractYears = Math.max(1, Number(periodEl?.value || 1));
       const endDate = new Date(start);
       if (isNaN(endDate.getTime())) {
         endEl.value = '';
@@ -293,7 +278,7 @@
         return;
       }
 
-      endDate.setFullYear(endDate.getFullYear() + contractYears);
+      endDate.setFullYear(endDate.getFullYear() + 1);
       endEl.value = toDateInputString(endDate);
 
       const reminderDate = new Date(endDate);
@@ -454,7 +439,6 @@
             ${detailField('Email ID', r.emailId)}
             ${detailField('Start Date', formatDate(r.contractStartDate))}
             ${detailField('End Date', formatDate(r.contractEndDate))}
-            ${detailField('Contract Period', inferContractPeriodYears(r.contractStartDate, r.contractEndDate) + ' Year' + (inferContractPeriodYears(r.contractStartDate, r.contractEndDate) > 1 ? 's' : ''))}
             ${detailField('Renewal Reminder', formatDate(r.renewalReminderDate))}
             ${detailField('Frequency', r.frequency)}
             ${detailField('Last Service', formatDate(r.lastServiceDate))}
@@ -555,8 +539,6 @@
       document.getElementById('trackerForm').reset();
       document.getElementById('editId').value = '';
       document.getElementById('serialNo').value = getNextSerialNo();
-      const periodEl = document.getElementById('contractPeriod');
-      if (periodEl) periodEl.value = '1';
       document.getElementById('modalLabel').textContent = 'New entry';
       document.getElementById('modalTitle').textContent = 'Create contract record';
       document.getElementById('saveRecordButton').disabled = false;
@@ -595,8 +577,6 @@
       document.getElementById('emailId').value = r.emailId || '';
       document.getElementById('contractStartDate').value = formatDateInputValue(r.contractStartDate);
       document.getElementById('contractEndDate').value = formatDateInputValue(r.contractEndDate);
-      const periodEl = document.getElementById('contractPeriod');
-      if (periodEl) periodEl.value = String(inferContractPeriodYears(r.contractStartDate, r.contractEndDate));
       document.getElementById('contractValueAed').value = r.contractValueAed || '';
       document.getElementById('approvedBudgetAed').value = r.approvedBudgetAed || '';
       document.getElementById('paymentTerms').value = r.paymentTerms || '';
@@ -754,7 +734,7 @@
       button.disabled = true;
       button.textContent = 'Signing In...';
 
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
       button.disabled = false;
       button.textContent = 'Sign In';
@@ -767,6 +747,17 @@
 
       document.getElementById('loginForm').reset();
       showToast('Login successful');
+
+      // GitHub Pages fallback: sometimes the Supabase auth-state event is delayed
+      // or blocked by browser storage rules. Since password login already succeeded,
+      // switch the UI immediately and load records directly.
+      const session = data?.session || (await supabaseClient.auth.getSession()).data?.session;
+      if (session?.user) {
+        await handleSessionChange(session);
+      } else if (data?.user) {
+        showAppScreen(data.user);
+        await loadRecordsFromSupabase();
+      }
     }
 
     async function handleLogout() {
@@ -1020,8 +1011,13 @@
       document.getElementById('createAccountButton')?.addEventListener('click', signupSupabase);
       document.querySelectorAll('.nav-btn[data-view]').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.view)));
 
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      await handleSessionChange(session);
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        await handleSessionChange(session);
+      } catch (err) {
+        console.error('Session check failed:', err);
+        showAuthScreen();
+      }
 
       supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         await handleSessionChange(session);
